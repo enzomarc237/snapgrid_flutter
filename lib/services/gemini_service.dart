@@ -33,11 +33,17 @@ class GeminiService {
     }
   }
 
+  /// Checks if a Gemini API key is stored and available for use.
+  ///
+  /// Returns true if a non-empty API key is found in secure storage.
   Future<bool> hasApiKey() async {
     final apiKey = await _secureStorage.read(key: 'gemini_api_key');
     return apiKey != null && apiKey.isNotEmpty;
   }
 
+  /// Securely stores a new Gemini API key and initializes the API with it.
+  ///
+  /// This method should be called when the user enters a new API key in settings.
   Future<void> setApiKey(String apiKey) async {
     await _secureStorage.write(key: 'gemini_api_key', value: apiKey);
     Gemini.init(apiKey: apiKey);
