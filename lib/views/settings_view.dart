@@ -282,4 +282,87 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       ],
     );
   }
+
+  /// Builds a consistent UI tile for displaying directory information
+  Widget _buildDirectoryInfoTile(
+    BuildContext context, {
+    required String title,
+    required String path,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color:
+            MacosTheme.of(context).brightness == Brightness.dark
+                ? MacosColors.controlBackgroundColor.darkColor
+                : MacosColors.controlBackgroundColor.color,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: MacosTheme.of(context).dividerColor,
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title and description
+          Text(
+            title,
+            style: MacosTheme.of(
+              context,
+            ).typography.headline.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: MacosTheme.of(context).typography.subheadline,
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
+
+          // Path display with copy button
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  path,
+                  style: MacosTheme.of(
+                    context,
+                  ).typography.body.copyWith(fontFamily: 'Menlo', fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              PushButton(
+                controlSize: ControlSize.small,
+                secondary: true,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const MacosIcon(CupertinoIcons.doc_on_clipboard, size: 14),
+                    const SizedBox(width: 4),
+                    const Text('Copy'),
+                  ],
+                ),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: path));
+
+                  // Optional: Show feedback that path was copied
+                  showMacosTooltip(
+                    context: context,
+                    builder:
+                        (_) => const MacosTooltip(
+                          message: 'Path copied to clipboard',
+                        ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
