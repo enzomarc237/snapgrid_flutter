@@ -17,7 +17,12 @@ class SettingsView extends ConsumerStatefulWidget {
 class _SettingsViewState extends ConsumerState<SettingsView> {
   final TextEditingController _apiKeyController = TextEditingController();
   bool _isLoading = false;
-  String _appDirectoryPath = 'Loading...';
+  Map<String, String> _directories = {
+    'base': 'Loading...',
+    'images': 'Loading...',
+    'metadata': 'Loading...',
+    'trash': 'Loading...',
+  };
 
   @override
   void initState() {
@@ -60,7 +65,9 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     // Use the provider directly from screenshot_providers.dart
     final directories = await ref.read(appDirectoryProvider.future);
     setState(() {
-      _appDirectoryPath = directories['base'] ?? 'Error loading path';
+      _directories = directories.map(
+        (key, value) => MapEntry(key, value ?? 'Error loading path'),
+      );
     });
   }
 
@@ -224,42 +231,49 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
                     // Storage location section
                     Text(
-                      'Storage Location',
+                      'Storage Locations',
                       style: MacosTheme.of(context).typography.title3,
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color:
-                            MacosTheme.of(context).brightness == Brightness.dark
-                                ? MacosColors.controlBackgroundColor.darkColor
-                                : MacosColors.controlBackgroundColor.color,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _appDirectoryPath,
-                              style: MacosTheme.of(
-                                context,
-                              ).typography.body.copyWith(fontFamily: 'Menlo'),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          PushButton(
-                            controlSize: ControlSize.small,
-                            child: const Text('Copy Path'),
-                            onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(text: _appDirectoryPath),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                    Text(
+                      'SnapGrid stores your files in the following directories:',
+                      style: MacosTheme.of(context).typography.body,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Base directory
+                    _buildDirectoryInfoTile(
+                      context,
+                      title: 'Application Directory',
+                      path: _directories['base']!,
+                      description: 'Root folder for all SnapGrid data',
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Images directory
+                    _buildDirectoryInfoTile(
+                      context,
+                      title: 'Screenshots',
+                      path: _directories['images']!,
+                      description: 'Stores your imported UI screenshots',
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Metadata directory
+                    _buildDirectoryInfoTile(
+                      context,
+                      title: 'Analysis Data',
+                      path: _directories['metadata']!,
+                      description: 'Contains Gemini AI analysis results',
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Trash directory
+                    _buildDirectoryInfoTile(
+                      context,
+                      title: 'Trash',
+                      path: _directories['trash']!,
+                      description: 'Temporarily stores deleted screenshots',
                     ),
                   ],
                 ),
