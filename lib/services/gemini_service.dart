@@ -180,6 +180,15 @@ class GeminiService {
     }
   }
 
+  /// Extracts structured data from unformatted text when JSON parsing fails.
+  ///
+  /// This method serves as a fallback mechanism when the Gemini API response
+  /// is not in perfect JSON format. It uses regular expressions to extract the
+  /// required fields (uiType, components, extractedText, colorScheme, layoutPattern)
+  /// from the raw text response.
+  ///
+  /// Returns a Map with the same structure as expected from JSON parsing,
+  /// or null if extraction fails.
   Map<String, dynamic>? _extractStructuredDataFromText(String text) {
     try {
       // Simple extraction if the response is not valid JSON
