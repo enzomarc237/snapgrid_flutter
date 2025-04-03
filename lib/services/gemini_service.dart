@@ -4,14 +4,24 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 
+/// Service for interacting with Google's Gemini AI model to analyze screenshots
+///
+/// Handles secure storage of API keys, image analysis requests, and structured
+/// response parsing. This service is part of Phase 3 of the SnapGrid development
+/// plan, providing AI-powered UI element detection for screenshots.
 class GeminiService {
   final Gemini _gemini = Gemini.instance;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
+  /// Creates a new GeminiService instance and initializes the Gemini API
+  /// with any stored API key.
   GeminiService() {
     _initialize();
   }
 
+  /// Initializes the Gemini API with the stored API key, if available.
+  ///
+  /// Gracefully handles errors during initialization to prevent app crashes.
   Future<void> _initialize() async {
     try {
       final apiKey = await _secureStorage.read(key: 'gemini_api_key');
