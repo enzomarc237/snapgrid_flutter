@@ -81,7 +81,7 @@ class ScreenshotGridView extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           ),
         ),
-        
+
         // Screenshots grid
         Expanded(
           child: screenshotsAsync.when(
@@ -103,75 +103,75 @@ class ScreenshotGridView extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(
                           'No matching screenshots found',
-                          style: MacosTheme.of(context).typography.title3.copyWith(
-                            color: MacosColors.systemGrayColor,
-                          ),
+                          style: MacosTheme.of(context).typography.title3
+                              .copyWith(color: MacosColors.systemGrayColor),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Try a different search term',
-                          style: MacosTheme.of(context).typography.body.copyWith(
-                            color: MacosColors.systemGrayColor,
-                          ),
+                          style: MacosTheme.of(context).typography.body
+                              .copyWith(color: MacosColors.systemGrayColor),
                         ),
                       ],
                     ),
                   );
                 }
-                
-                // Otherwise show the default empty state
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const MacosIcon(
-                  CupertinoIcons.photo_on_rectangle,
-                  size: 48,
-                  color: CupertinoColors.systemGrey,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No screenshots yet',
-                  style: MacosTheme.of(context).typography.title3.copyWith(
-                    color: MacosColors.systemGrayColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                PushButton(
-                  controlSize: ControlSize.large,
-                  child: const Text('Add Screenshot'),
-                  onPressed: () {
-                    // Use ref to call method on state
-                    ref
-                        .read(mainViewStateProvider.notifier)
-                        .pickScreenshot(context);
-                  },
-                ),
-              ],
-            ),
-          );
-        }
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 16 / 10, // Common screenshot aspect ratio
+                // Otherwise show the default empty state
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const MacosIcon(
+                        CupertinoIcons.photo_on_rectangle,
+                        size: 48,
+                        color: CupertinoColors.systemGrey,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No screenshots yet',
+                        style: MacosTheme.of(context).typography.title3
+                            .copyWith(color: MacosColors.systemGrayColor),
+                      ),
+                      const SizedBox(height: 8),
+                      PushButton(
+                        controlSize: ControlSize.large,
+                        child: const Text('Add Screenshot'),
+                        onPressed: () {
+                          // Use ref to call method on state
+                          ref
+                              .read(mainViewStateProvider.notifier)
+                              .pickScreenshot(context);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 16 / 10, // Common screenshot aspect ratio
+                ),
+                itemCount: screenshotsData.length,
+                itemBuilder: (context, index) {
+                  final screenshotMetadata = screenshotsData[index];
+                  // Pass the whole metadata object
+                  return ScreenshotGridItem(metadata: screenshotMetadata);
+                },
+              );
+            },
+            loading: () => const Center(child: ProgressCircle()),
+            error:
+                (error, stackTrace) =>
+                    Center(child: Text('Error loading screenshots: $error')),
           ),
-          itemCount: screenshotsData.length,
-          itemBuilder: (context, index) {
-            final screenshotMetadata = screenshotsData[index];
-            // Pass the whole metadata object
-            return ScreenshotGridItem(metadata: screenshotMetadata);
-          },
-        );
-      },
-      loading: () => const Center(child: ProgressCircle()),
-      error:
-          (error, stackTrace) =>
-              Center(child: Text('Error loading screenshots: $error')),
+        ),
+      ],
     );
   }
 }
@@ -184,7 +184,6 @@ class ScreenshotGridItem extends ConsumerWidget {
   const ScreenshotGridItem({super.key, required this.metadata});
 
   @override
-
   Widget build(BuildContext context, WidgetRef ref) {
     // Added WidgetRef
     // Watch the selected screenshot provider
