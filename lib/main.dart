@@ -52,7 +52,7 @@ class SnapGridApp extends StatelessWidget {
       darkTheme: MacosThemeData.dark(),
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
-      home: ScreenshotGridView(),
+      home: const MainView(),
     );
   }
 }
