@@ -349,12 +349,26 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: path));
 
-                  // Show feedback via SnackBar
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Path copied to clipboard'),
-                      duration: const Duration(seconds: 1),
-                    ),
+                  // Show MacOS-style feedback dialog
+                  showMacosAlertDialog(
+                    context: context,
+                    builder:
+                        (_) => MacosAlertDialog(
+                          appIcon: const MacosIcon(
+                            CupertinoIcons.doc_on_clipboard,
+                            size: 32,
+                          ),
+                          title: const Text('Path Copied'),
+                          message: Text(
+                            'The path has been copied to your clipboard:',
+                            textAlign: TextAlign.center,
+                          ),
+                          primaryButton: PushButton(
+                            controlSize: ControlSize.large,
+                            child: const Text('OK'),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ),
                   );
                 },
               ),
