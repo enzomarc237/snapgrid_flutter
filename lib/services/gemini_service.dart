@@ -69,6 +69,13 @@ class GeminiService {
     }
   }
 
+  /// Analyzes a screenshot using Google's Gemini AI vision model to identify UI elements.
+  ///
+  /// Takes the file path of the screenshot and sends it to Gemini with a prompt
+  /// requesting identification of UI type, components, text, colors, and layout pattern.
+  /// Returns a structured Map containing the analysis results or null if the analysis fails.
+  ///
+  /// Per the DEV_PLAN, this implements Phase 3 of the SnapGrid application functionality.
   Future<Map<String, dynamic>?> analyzeScreenshot(String imagePath) async {
     try {
       if (!await hasApiKey()) {
@@ -109,23 +116,62 @@ class GeminiService {
         ),
       ];
 
-      final response = await _gemini.chat(content);
+      try {
+        final response = await _gemini.chat(content);
 
-      if (response?.output == null) {
-        throw Exception('No response from Gemini API');
-      }
+        if (response?.output == null) {
+          throw Exception('No response from Gemini API');
+        }
 
-      // Extract JSON from response
-      final String rawText = response?.output ?? '{}';
-      final jsonStartIndex = rawText.indexOf('{');
-      final jsonEndIndex = rawText.lastIndexOf('}');
+        // Check for potential content filtering or policy violation responses
+        final String rawText = response?.output ?? '{}';
+        if (rawText.toLowerCase().contains('content filtered') ||
+            rawText.toLowerCase().contains('policy violation') ||
+            rawText.toLowerCase().contains('could not process')) {
+          throw Exception(
+            'Content filtering applied or policy violation detected by Gemini API. ' +
+                'The image may contain content that violates Google\'s policies.',
+          );
+        }
 
-      if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
-        final jsonStr = rawText.substring(jsonStartIndex, jsonEndIndex + 1);
-        return json.decode(jsonStr);
-      } else {
-        // Try to extract structured data even if not in perfect JSON format
-        return _extractStructuredDataFromText(rawText);
+        // Extract JSON from response
+        final jsonStartIndex = rawText.indexOf('{');
+        final jsonEndIndex = rawText.lastIndexOf('}');
+
+        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+          final jsonStr = rawText.substring(jsonStartIndex, jsonEndIndex + 1);
+          try {
+            return json.decode(jsonStr);
+          } catch (jsonError) {
+            debugPrint('Error parsing JSON from Gemini response: $jsonError');
+            // Fall back to regex extraction if JSON parsing fails
+            return _extractStructuredDataFromText(rawText);
+          }
+        } else {
+          // Try to extract structured data even if not in perfect JSON format
+          return _extractStructuredDataFromText(rawText);
+        }
+      } on SocketException catch (e) {
+        throw Exception(
+          'Network error: Please check your internet connection. $e',
+        );
+      } on TimeoutException catch (e) {
+        throw Exception(
+          'Request timed out: The Gemini API is taking too long to respond. $e',
+        );
+      } catch (apiError) {
+        // Check for rate limit errors
+        final errorMsg = apiError.toString().toLowerCase();
+        if (errorMsg.contains('rate limit') ||
+            errorMsg.contains('quota') ||
+            errorMsg.contains('429')) {
+          throw Exception(
+            'Rate limit exceeded: You have exceeded your Gemini API quota. ' +
+                'Please try again later or check your API key usage limits.',
+          );
+        }
+        // Re-throw with more context
+        throw Exception('Gemini API error: $apiError');
       }
     } catch (e) {
       debugPrint('Error analyzing screenshot: $e');
