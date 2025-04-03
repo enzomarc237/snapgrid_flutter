@@ -65,30 +65,116 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Future<void> _saveApiKey() async {
-    // TODO: Implement with flutter_secure_storage (Phase 4)
-    // final secureStorage = ref.read(flutterSecureStorageProvider);
-    // final apiKey = _apiKeyController.text;
-    setState(() => _isLoading = true);
-    // await secureStorage.write(key: 'geminiApiKey', value: apiKey);
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate save
-    setState(() => _isLoading = false);
-    // ref.invalidate(geminiApiKeySetProvider); // Invalidate check provider
+    try {
+      final geminiService = ref.read(geminiServiceProvider);
+      final apiKey = _apiKeyController.text.trim();
 
-    if (!mounted) return;
-    showMacosAlertDialog(
-      context: context,
-      builder:
-          (_) => MacosAlertDialog(
-            appIcon: const FlutterLogo(size: 56),
-            title: const Text('API Key Saved'),
-            message: const Text('Your Gemini API key has been saved securely.'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
+      setState(() => _isLoading = true);
+
+      // Clear key if empty, otherwise save it
+      if (apiKey.isEmpty || apiKey == '••••••••••••••••••••••••••') {
+        // Show confirmation dialog before clearing
+        if (!mounted) return;
+        final shouldClear =
+            await showMacosAlertDialog<bool>(
+              context: context,
+              builder:
+                  (_) => MacosAlertDialog(
+                    appIcon: const MacosIcon(
+                      CupertinoIcons.exclamationmark_triangle,
+                    ),
+                    title: const Text('Clear API Key?'),
+                    message: const Text(
+                      'This will remove your Gemini API key. You won\'t be able to '
+                      'analyze screenshots until you add a new key. Continue?',
+                    ),
+                    primaryButton: PushButton(
+                      controlSize: ControlSize.large,
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                    secondaryButton: PushButton(
+                      controlSize: ControlSize.large,
+                      secondary: true,
+                      child: const Text('Clear Key'),
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ),
+            ) ??
+            false;
+
+        if (shouldClear) {
+          // Clear the API key
+          await geminiService.setApiKey('');
+
+          if (!mounted) return;
+          showMacosAlertDialog(
+            context: context,
+            builder:
+                (_) => MacosAlertDialog(
+                  appIcon: const FlutterLogo(size: 56),
+                  title: const Text('API Key Cleared'),
+                  message: const Text('Your Gemini API key has been removed.'),
+                  primaryButton: PushButton(
+                    controlSize: ControlSize.large,
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+          );
+
+          _apiKeyController.clear();
+        }
+      } else {
+        // Save the new API key
+        await geminiService.setApiKey(apiKey);
+
+        if (!mounted) return;
+        showMacosAlertDialog(
+          context: context,
+          builder:
+              (_) => MacosAlertDialog(
+                appIcon: const FlutterLogo(size: 56),
+                title: const Text('API Key Saved'),
+                message: const Text(
+                  'Your Gemini API key has been saved securely.',
+                ),
+                primaryButton: PushButton(
+                  controlSize: ControlSize.large,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+        );
+
+        // Set placeholder for security
+        _apiKeyController.text = '••••••••••••••••••••••••••';
+      }
+
+      // Invalidate the provider to refresh dependent UI
+      ref.invalidate(geminiApiKeySetProvider);
+    } catch (e) {
+      if (!mounted) return;
+
+      showMacosAlertDialog(
+        context: context,
+        builder:
+            (_) => MacosAlertDialog(
+              appIcon: const MacosIcon(CupertinoIcons.exclamationmark_triangle),
+              title: const Text('Error'),
+              message: Text('Failed to save API key: $e'),
+              primaryButton: PushButton(
+                controlSize: ControlSize.large,
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
-          ),
-    );
+      );
+
+      debugPrint('Error saving API key: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
