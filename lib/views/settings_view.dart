@@ -349,13 +349,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: path));
 
-                  // Optional: Show feedback that path was copied
-                  showMacosTooltip(
-                    context: context,
-                    builder:
-                        (_) => const MacosTooltip(
-                          message: 'Path copied to clipboard',
-                        ),
+                  // Show feedback via SnackBar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Path copied to clipboard'),
+                      duration: const Duration(seconds: 1),
+                    ),
                   );
                 },
               ),
