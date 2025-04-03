@@ -65,13 +65,61 @@ class ScreenshotGridView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use the provider that returns ScreenshotMetadata objects
-    final screenshotsAsync = ref.watch(screenshotsWithMetadataProvider);
+    // Use the filtered provider that returns ScreenshotMetadata objects
+    final screenshotsAsync = ref.watch(filteredScreenshotsProvider);
 
-    return screenshotsAsync.when(
-      data: (screenshotsData) {
-        // Renamed variable
-        if (screenshotsData.isEmpty) {
+    return Column(
+      children: [
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: MacosSearchField(
+            placeholder: 'Search screenshots by content, elements, colors...',
+            onChanged: (value) {
+              ref.read(searchQueryProvider.notifier).state = value;
+            },
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          ),
+        ),
+        
+        // Screenshots grid
+        Expanded(
+          child: screenshotsAsync.when(
+            data: (screenshotsData) {
+              // Renamed variable
+              if (screenshotsData.isEmpty) {
+                // Check if it's empty due to search filter
+                final searchQuery = ref.watch(searchQueryProvider);
+                if (searchQuery.isNotEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const MacosIcon(
+                          CupertinoIcons.search,
+                          size: 48,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No matching screenshots found',
+                          style: MacosTheme.of(context).typography.title3.copyWith(
+                            color: MacosColors.systemGrayColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try a different search term',
+                          style: MacosTheme.of(context).typography.body.copyWith(
+                            color: MacosColors.systemGrayColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                // Otherwise show the default empty state
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -136,6 +184,7 @@ class ScreenshotGridItem extends ConsumerWidget {
   const ScreenshotGridItem({super.key, required this.metadata});
 
   @override
+
   Widget build(BuildContext context, WidgetRef ref) {
     // Added WidgetRef
     // Watch the selected screenshot provider
