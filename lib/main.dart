@@ -207,159 +207,85 @@ class ScreenshotGridItem extends ConsumerWidget {
   }
 }
 
-// SettingsView widget - Refactored to ConsumerStatefulWidget
-class SettingsView extends ConsumerStatefulWidget {
-  // Changed to ConsumerStatefulWidget
-  const SettingsView({super.key});
+// MainView widget to handle navigation between screens
+class MainView extends ConsumerWidget {
+  const MainView({super.key});
 
   @override
-  ConsumerState<SettingsView> createState() => _SettingsViewState(); // Changed state type
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pageIndex = ref.watch(mainViewStateProvider).pageIndex;
+    final selectedScreenshot = ref.watch(selectedScreenshotProvider);
 
-class _SettingsViewState extends ConsumerState<SettingsView> {
-  // Changed state type
-  final TextEditingController _apiKeyController = TextEditingController();
-  bool _isLoading = false;
-  String _appDirectoryPath = 'Loading...';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadApiKey();
-    _loadAppDirectory();
-  }
-
-  @override
-  void dispose() {
-    _apiKeyController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadApiKey() async {
-    // TODO: Implement with flutter_secure_storage (Phase 4)
-    // final secureStorage = ref.read(flutterSecureStorageProvider);
-    // final key = await secureStorage.read(key: 'geminiApiKey');
-    // if (key != null && key.isNotEmpty) {
-    //   _apiKeyController.text = key;
-    // }
-  }
-
-  Future<void> _loadAppDirectory() async {
-    // Use the provider
-    final directories = await ref.read(appDirectoryProvider.future);
-    setState(() {
-      _appDirectoryPath = directories['base'] ?? 'Error loading path';
-    });
-  }
-
-  Future<void> _saveApiKey() async {
-    // TODO: Implement with flutter_secure_storage (Phase 4)
-    // final secureStorage = ref.read(flutterSecureStorageProvider);
-    // final apiKey = _apiKeyController.text;
-    setState(() => _isLoading = true);
-    // await secureStorage.write(key: 'geminiApiKey', value: apiKey);
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate save
-    setState(() => _isLoading = false);
-    // ref.invalidate(geminiApiKeySetProvider); // Invalidate check provider
-
-    if (!mounted) return;
-    showMacosAlertDialog(
-      context: context,
-      builder:
-          (_) => MacosAlertDialog(
-            appIcon: const FlutterLogo(size: 56),
-            title: const Text('API Key Saved'),
-            message: const Text('Your Gemini API key has been saved securely.'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Settings', style: MacosTheme.of(context).typography.largeTitle),
-          const SizedBox(height: 24),
-
-          // Gemini API Key section
-          Text(
-            'Google Gemini API Key',
-            style: MacosTheme.of(context).typography.title3,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: MacosTextField(
-                  controller: _apiKeyController,
-                  placeholder: 'Enter your Google Gemini API key',
-                  obscureText: true,
-                ),
+    return MacosWindow(
+      sidebar: Sidebar(
+        minWidth: 200,
+        builder: (context, scrollController) {
+          return SidebarItems(
+            currentIndex: pageIndex,
+            onChanged: (index) {
+              // Clear selected screenshot when switching to settings
+              if (index == 1) {
+                ref.read(selectedScreenshotProvider.notifier).state = null;
+              }
+              ref.read(mainViewStateProvider.notifier).setPageIndex(index);
+            },
+            items: const [
+              SidebarItem(
+                leading: MacosIcon(CupertinoIcons.photo_on_rectangle),
+                label: Text('Screenshots'),
               ),
-              const SizedBox(width: 8),
-              _isLoading
-                  ? const ProgressCircle(value: null)
-                  : PushButton(
-                    controlSize: ControlSize.regular,
-                    onPressed: _saveApiKey,
-                    child: const Text('Save API Key'),
-                  ),
+              SidebarItem(
+                leading: MacosIcon(CupertinoIcons.settings),
+                label: Text('Settings'),
+              ),
             ],
-          ),
-          const SizedBox(height: 24),
-
-          // Storage location section
-          Text(
-            'Storage Location',
-            style: MacosTheme.of(context).typography.title3,
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color:
-                  MacosTheme.of(context).brightness == Brightness.dark
-                      ? MacosColors.controlBackgroundColor.darkColor
-                      : MacosColors.controlBackgroundColor.color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    _appDirectoryPath,
-                    style: MacosTheme.of(
-                      context,
-                    ).typography.body.copyWith(fontFamily: 'Menlo'),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                PushButton(
-                  controlSize: ControlSize.small,
-                  child: const Text('Copy Path'),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _appDirectoryPath));
+          );
+        },
+      ),
+      child: IndexedStack(
+        index: pageIndex,
+        children: [
+          // Screenshots View (Grid or Detail)
+          Builder(
+            builder: (context) {
+              // Show detail view if a screenshot is selected
+              if (selectedScreenshot != null) {
+                // Find the selected screenshot's metadata
+                final screenshotsAsync = ref.watch(
+                  screenshotsWithMetadataProvider,
+                );
+                return screenshotsAsync.when(
+                  data: (screenshots) {
+                    final selectedMetadata = screenshots.firstWhere(
+                      (metadata) => metadata.filePath == selectedScreenshot,
+                      orElse:
+                          () => ScreenshotMetadata(
+                            fileName: 'Unknown',
+                            filePath: selectedScreenshot,
+                            importDate: DateTime.now(),
+                          ),
+                    );
+                    return ScreenshotDetailView(screenshot: selectedMetadata);
                   },
-                ),
-              ],
-            ),
+                  loading: () => const Center(child: ProgressCircle()),
+                  error:
+                      (error, stack) => Center(
+                        child: Text('Error loading screenshot details: $error'),
+                      ),
+                );
+              } else {
+                return const ScreenshotGridView();
+              }
+            },
           ),
+
+          // Settings View
+          const SettingsView(),
         ],
       ),
     );
   }
 }
-
-// Removed ScreenshotGridViewV2 and SettingsViewV2 as they are duplicates
 
 // Provider for the MainView state to allow calling methods from elsewhere
 final mainViewStateProvider =
