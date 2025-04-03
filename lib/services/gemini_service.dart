@@ -33,6 +33,26 @@ class GeminiService {
     Gemini.init(apiKey: apiKey);
   }
 
+  /// Determines the MIME type based on file extension
+  String _getMimeType(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'bmp':
+        return 'image/bmp';
+      default:
+        return 'image/jpeg'; // Default fallback
+    }
+  }
+
   Future<Map<String, dynamic>?> analyzeScreenshot(String imagePath) async {
     try {
       if (!await hasApiKey()) {
@@ -48,9 +68,6 @@ class GeminiService {
 
       // Determine mime type based on file extension
       final String mimeType = _getMimeType(imagePath);
-
-      // Read file as bytes
-      final bytes = await file.readAsBytes();
 
       final prompt = '''
         Analyze this UI screenshot and identify key elements:
@@ -69,7 +86,9 @@ class GeminiService {
           role: 'user',
           parts: [
             TextPart(prompt),
-            FilePart(FileDataPart(mimeType: mimeType, data: bytes)),
+            FilePart(
+              FileDataPart(mimeType: mimeType, fileUri: file.uri.toString()),
+            ),
           ],
         ),
       ];
