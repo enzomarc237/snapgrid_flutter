@@ -33,12 +33,27 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Future<void> _loadApiKey() async {
-    // TODO: Implement with flutter_secure_storage (Phase 4)
-    // final secureStorage = ref.read(flutterSecureStorageProvider);
-    // final key = await secureStorage.read(key: 'geminiApiKey');
-    // if (key != null && key.isNotEmpty) {
-    //   _apiKeyController.text = key;
-    // }
+    try {
+      // Use the geminiServiceProvider to access the GeminiService
+      final geminiService = ref.read(geminiServiceProvider);
+
+      // Check if an API key has been set
+      final hasKey = await geminiService.hasApiKey();
+
+      if (hasKey) {
+        // We don't actually retrieve the key value for security reasons
+        // Just show a placeholder to indicate a key is set
+        setState(() {
+          _apiKeyController.text = '••••••••••••••••••••••••••';
+        });
+      } else {
+        setState(() {
+          _apiKeyController.text = '';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading API key: $e');
+    }
   }
 
   Future<void> _loadAppDirectory() async {
