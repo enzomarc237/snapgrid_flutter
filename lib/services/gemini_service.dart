@@ -46,7 +46,11 @@ class GeminiService {
         throw Exception('Image file not found: $imagePath');
       }
 
-      // final bytes = await file.readAsBytes();
+      // Determine mime type based on file extension
+      final String mimeType = _getMimeType(imagePath);
+
+      // Read file as bytes
+      final bytes = await file.readAsBytes();
 
       final prompt = '''
         Analyze this UI screenshot and identify key elements:
@@ -65,12 +69,7 @@ class GeminiService {
           role: 'user',
           parts: [
             TextPart(prompt),
-            FilePart(
-              FileDataPart(
-                mimeType: 'image/jpeg',
-                fileUri: file.uri.toString(),
-              ),
-            ),
+            FilePart(FileDataPart(mimeType: mimeType, data: bytes)),
           ],
         ),
       ];
