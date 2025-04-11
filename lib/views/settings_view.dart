@@ -5,7 +5,6 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../providers/screenshot_providers.dart';
-import '../services/gemini_service.dart';
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -65,9 +64,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     // Use the provider directly from screenshot_providers.dart
     final directories = await ref.read(appDirectoryProvider.future);
     setState(() {
-      _directories = directories.map(
-        (key, value) => MapEntry(key, value ?? 'Error loading path'),
-      );
+      _directories = directories.map((key, value) => MapEntry(key, value));
     });
   }
 
@@ -187,95 +184,96 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   @override
   Widget build(BuildContext context) {
     return MacosScaffold(
-      toolBar: const ToolBar(title: Text('Settings')),
       children: [
         ContentArea(
           builder:
               (context, scrollController) => Padding(
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Settings',
-                      style: MacosTheme.of(context).typography.largeTitle,
-                    ),
-                    const SizedBox(height: 24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Settings',
+                        style: MacosTheme.of(context).typography.largeTitle,
+                      ),
+                      const SizedBox(height: 24),
 
-                    // Gemini API Key section
-                    Text(
-                      'Google Gemini API Key',
-                      style: MacosTheme.of(context).typography.title3,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: MacosTextField(
-                            controller: _apiKeyController,
-                            placeholder: 'Enter your Google Gemini API key',
-                            obscureText: true,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _isLoading
-                            ? const ProgressCircle(value: null)
-                            : PushButton(
-                              controlSize: ControlSize.regular,
-                              onPressed: _saveApiKey,
-                              child: const Text('Save API Key'),
+                      // Gemini API Key section
+                      Text(
+                        'Google Gemini API Key',
+                        style: MacosTheme.of(context).typography.title3,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: MacosTextField(
+                              controller: _apiKeyController,
+                              placeholder: 'Enter your Google Gemini API key',
+                              obscureText: true,
                             ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
+                          ),
+                          const SizedBox(width: 8),
+                          _isLoading
+                              ? const ProgressCircle(value: null)
+                              : PushButton(
+                                controlSize: ControlSize.regular,
+                                onPressed: _saveApiKey,
+                                child: const Text('Save API Key'),
+                              ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
 
-                    // Storage location section
-                    Text(
-                      'Storage Locations',
-                      style: MacosTheme.of(context).typography.title3,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'SnapGrid stores your files in the following directories:',
-                      style: MacosTheme.of(context).typography.body,
-                    ),
-                    const SizedBox(height: 16),
+                      // Storage location section
+                      Text(
+                        'Storage Locations',
+                        style: MacosTheme.of(context).typography.title3,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'SnapGrid stores your files in the following directories:',
+                        style: MacosTheme.of(context).typography.body,
+                      ),
+                      const SizedBox(height: 16),
 
-                    // Base directory
-                    _buildDirectoryInfoTile(
-                      context,
-                      title: 'Application Directory',
-                      path: _directories['base']!,
-                      description: 'Root folder for all SnapGrid data',
-                    ),
-                    const SizedBox(height: 12),
+                      // Base directory
+                      _buildDirectoryInfoTile(
+                        context,
+                        title: 'Application Directory',
+                        path: _directories['base']!,
+                        description: 'Root folder for all SnapGrid data',
+                      ),
+                      const SizedBox(height: 12),
 
-                    // Images directory
-                    _buildDirectoryInfoTile(
-                      context,
-                      title: 'Screenshots',
-                      path: _directories['images']!,
-                      description: 'Stores your imported UI screenshots',
-                    ),
-                    const SizedBox(height: 12),
+                      // Images directory
+                      _buildDirectoryInfoTile(
+                        context,
+                        title: 'Screenshots',
+                        path: _directories['images']!,
+                        description: 'Stores your imported UI screenshots',
+                      ),
+                      const SizedBox(height: 12),
 
-                    // Metadata directory
-                    _buildDirectoryInfoTile(
-                      context,
-                      title: 'Analysis Data',
-                      path: _directories['metadata']!,
-                      description: 'Contains Gemini AI analysis results',
-                    ),
-                    const SizedBox(height: 12),
+                      // Metadata directory
+                      _buildDirectoryInfoTile(
+                        context,
+                        title: 'Analysis Data',
+                        path: _directories['metadata']!,
+                        description: 'Contains Gemini AI analysis results',
+                      ),
+                      const SizedBox(height: 12),
 
-                    // Trash directory
-                    _buildDirectoryInfoTile(
-                      context,
-                      title: 'Trash',
-                      path: _directories['trash']!,
-                      description: 'Temporarily stores deleted screenshots',
-                    ),
-                  ],
+                      // Trash directory
+                      _buildDirectoryInfoTile(
+                        context,
+                        title: 'Trash',
+                        path: _directories['trash']!,
+                        description: 'Temporarily stores deleted screenshots',
+                      ),
+                    ],
+                  ),
                 ),
               ),
         ),

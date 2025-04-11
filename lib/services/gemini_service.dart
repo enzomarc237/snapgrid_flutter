@@ -5,52 +5,93 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 
-/// Service for interacting with Google's Gemini AI model to analyze screenshots
-///
-/// Handles secure storage of API keys, image analysis requests, and structured
-/// response parsing. This service is part of Phase 3 of the SnapGrid development
-/// plan, providing AI-powered UI element detection for screenshots.
-class GeminiService {
-  final Gemini _gemini = Gemini.instance;
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+import '../features/settings/domain/services/model_registry.dart';
+import '../features/settings/domain/models/ai_model.dart';
 
-  /// Creates a new GeminiService instance and initializes the Gemini API
-  /// with any stored API key.
+class GeminiService {
+  late final Gemini _gemini;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  String? _selectedModelId;
+
   GeminiService() {
     _initialize();
   }
 
-  /// Initializes the Gemini API with the stored API key, if available.
-  ///
-  /// Gracefully handles errors during initialization to prevent app crashes.
   Future<void> _initialize() async {
     try {
       final apiKey = await _secureStorage.read(key: 'gemini_api_key');
       if (apiKey != null && apiKey.isNotEmpty) {
-        Gemini.init(apiKey: apiKey);
+        _gemini = Gemini.init(apiKey: apiKey);
+      }
+
+      // Load selected model or use default
+      _selectedModelId = await _secureStorage.read(
+        key: 'gemini_selected_model',
+      );
+      if (_selectedModelId == null) {
+        final defaultModel = ModelRegistry.getDefaultModelForProvider(
+          AIProviderType.gemini,
+        );
+        if (defaultModel != null) {
+          _selectedModelId = defaultModel.id;
+          await _secureStorage.write(
+            key: 'gemini_selected_model',
+            value: _selectedModelId,
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error initializing Gemini: $e');
     }
   }
 
-  /// Checks if a Gemini API key is stored and available for use.
-  ///
-  /// Returns true if a non-empty API key is found in secure storage.
   Future<bool> hasApiKey() async {
     final apiKey = await _secureStorage.read(key: 'gemini_api_key');
     return apiKey != null && apiKey.isNotEmpty;
   }
 
-  /// Securely stores a new Gemini API key and initializes the API with it.
-  ///
-  /// This method should be called when the user enters a new API key in settings.
   Future<void> setApiKey(String apiKey) async {
     await _secureStorage.write(key: 'gemini_api_key', value: apiKey);
-    Gemini.init(apiKey: apiKey);
+    _gemini = Gemini.init(apiKey: apiKey);
   }
 
-  /// Determines the MIME type based on file extension
+  Future<void> setModel(String modelId) async {
+    _selectedModelId = modelId;
+    await _secureStorage.write(key: 'gemini_selected_model', value: modelId);
+  }
+
+  Future<String> getSelectedModelId() async {
+    if (_selectedModelId != null) {
+      return _selectedModelId!;
+    }
+
+    // Load from storage or use default
+    _selectedModelId = await _secureStorage.read(key: 'gemini_selected_model');
+    if (_selectedModelId == null) {
+      final defaultModel = ModelRegistry.getDefaultModelForProvider(
+        AIProviderType.gemini,
+      );
+      if (defaultModel != null) {
+        _selectedModelId = defaultModel.id;
+        await _secureStorage.write(
+          key: 'gemini_selected_model',
+          value: _selectedModelId,
+        );
+      } else {
+        // Fallback to a known model if registry fails
+        _selectedModelId = 'gemini-1.5-pro';
+      }
+    }
+    return _selectedModelId!;
+  }
+
+  Future<String?> getApiKey() async {
+    return await _secureStorage.read(key: 'gemini_api_key');
+  }
+
+  // Helper method to get MIME type from file extension
+  // This is currently unused but may be needed in future versions
+  // ignore: unused_element
   String _getMimeType(String filePath) {
     final extension = filePath.split('.').last.toLowerCase();
     switch (extension) {
@@ -59,136 +100,86 @@ class GeminiService {
         return 'image/jpeg';
       case 'png':
         return 'image/png';
-      case 'gif':
-        return 'image/gif';
       case 'webp':
         return 'image/webp';
-      case 'bmp':
-        return 'image/bmp';
       default:
-        return 'image/jpeg'; // Default fallback
+        return 'image/jpeg';
     }
   }
 
-  /// Analyzes a screenshot using Google's Gemini AI vision model to identify UI elements.
-  ///
-  /// Takes the file path of the screenshot and sends it to Gemini with a prompt
-  /// requesting identification of UI type, components, text, colors, and layout pattern.
-  /// Returns a structured Map containing the analysis results or null if the analysis fails.
-  ///
-  /// Per the DEV_PLAN, this implements Phase 3 of the SnapGrid application functionality.
   Future<Map<String, dynamic>?> analyzeScreenshot(String imagePath) async {
     try {
+      // Verify API key exists
       if (!await hasApiKey()) {
-        throw Exception(
-          'No API key set. Please set a Gemini API key in Settings.',
-        );
+        throw Exception('No Gemini API key configured');
       }
 
+      // Verify image exists
       final file = File(imagePath);
       if (!await file.exists()) {
-        throw Exception('Image file not found: $imagePath');
+        throw Exception('Image file not found');
       }
 
-      // Determine mime type based on file extension
-      final String mimeType = _getMimeType(imagePath);
-
-      final prompt = '''
-        Analyze this UI screenshot and identify key elements:
-        1. Identify the type of UI (web, mobile, desktop)
-        2. List all visible UI components (buttons, text fields, etc.)
-        3. Extract any visible text
-        4. Determine the color scheme (primary, secondary colors)
-        5. Identify the layout pattern (grid, list, etc.)
-        
-        Format your response as JSON with these keys: 
-        uiType, components, extractedText, colorScheme, layoutPattern
+      // Prepare the analysis prompt
+      const prompt = '''
+      Analyze this UI screenshot and provide structured JSON response with:
+      - uiType (web/mobile/desktop)
+      - components (list of UI elements)
+      - extractedText (visible text content)
+      - colorScheme (primary colors)
+      - layoutPattern (layout structure)
       ''';
 
-      final content = [
-        Content(
-          role: 'user',
-          parts: [
-            TextPart(prompt),
-            FilePart(
-              FileDataPart(mimeType: mimeType, fileUri: file.uri.toString()),
-            ),
-          ],
-        ),
-      ];
+      // Get the selected model ID
+      final modelId = await getSelectedModelId();
 
-      try {
-        final response = await _gemini.chat(content);
+      // Make the API request with timeout
+      final response = await _gemini
+          .prompt(
+            model: modelId,
+            parts: [TextPart(prompt), Part.bytes(await file.readAsBytes())],
+          )
+          .timeout(const Duration(seconds: 30));
 
-        if (response?.output == null) {
-          throw Exception('No response from Gemini API');
-        }
-
-        // Check for potential content filtering or policy violation responses
-        final String rawText = response?.output ?? '{}';
-        if (rawText.toLowerCase().contains('content filtered') ||
-            rawText.toLowerCase().contains('policy violation') ||
-            rawText.toLowerCase().contains('could not process')) {
-          throw Exception(
-            'Content filtering applied or policy violation detected by Gemini API. ' +
-                'The image may contain content that violates Google\'s policies.',
-          );
-        }
-
-        // Extract JSON from response
-        final jsonStartIndex = rawText.indexOf('{');
-        final jsonEndIndex = rawText.lastIndexOf('}');
-
-        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
-          final jsonStr = rawText.substring(jsonStartIndex, jsonEndIndex + 1);
-          try {
-            return json.decode(jsonStr);
-          } catch (jsonError) {
-            debugPrint('Error parsing JSON from Gemini response: $jsonError');
-            // Fall back to regex extraction if JSON parsing fails
-            return _extractStructuredDataFromText(rawText);
-          }
-        } else {
-          // Try to extract structured data even if not in perfect JSON format
-          return _extractStructuredDataFromText(rawText);
-        }
-      } on SocketException catch (e) {
-        throw Exception(
-          'Network error: Please check your internet connection. $e',
-        );
-      } on TimeoutException catch (e) {
-        throw Exception(
-          'Request timed out: The Gemini API is taking too long to respond. $e',
-        );
-      } catch (apiError) {
-        // Check for rate limit errors
-        final errorMsg = apiError.toString().toLowerCase();
-        if (errorMsg.contains('rate limit') ||
-            errorMsg.contains('quota') ||
-            errorMsg.contains('429')) {
-          throw Exception(
-            'Rate limit exceeded: You have exceeded your Gemini API quota. ' +
-                'Please try again later or check your API key usage limits.',
-          );
-        }
-        // Re-throw with more context
-        throw Exception('Gemini API error: $apiError');
+      // Handle response
+      if (response?.output == null) {
+        throw Exception('No response from Gemini API');
       }
+
+      // Log response for debugging (using debugPrint instead of print)
+      debugPrint('Gemini response received with model: $modelId');
+
+      // Extract JSON from response
+      final String rawText =
+          response!.output?.replaceAll("```", "").replaceAll("json", "") ??
+          '{}';
+      final jsonStartIndex = rawText.indexOf('{');
+      final jsonEndIndex = rawText.lastIndexOf('}');
+
+      if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+        final jsonStr = rawText.substring(jsonStartIndex, jsonEndIndex + 1);
+        return json.decode(jsonStr);
+      } else {
+        // Try to extract structured data even if not in perfect JSON format
+        return _extractStructuredDataFromText(rawText);
+      }
+    } on SocketException {
+      throw Exception('Network connection failed');
+    } on TimeoutException {
+      throw Exception('Request timed out');
     } catch (e) {
-      debugPrint('Error analyzing screenshot: $e');
-      return null;
+      if (e.toString().contains('400')) {
+        throw Exception(
+          'Invalid request - please check your API key and image format',
+        );
+      }
+      if (e.toString().contains('429')) {
+        throw Exception('API quota exceeded - try again later');
+      }
+      throw Exception('Analysis failed: ${e.toString()}');
     }
   }
 
-  /// Extracts structured data from unformatted text when JSON parsing fails.
-  ///
-  /// This method serves as a fallback mechanism when the Gemini API response
-  /// is not in perfect JSON format. It uses regular expressions to extract the
-  /// required fields (uiType, components, extractedText, colorScheme, layoutPattern)
-  /// from the raw text response.
-  ///
-  /// Returns a Map with the same structure as expected from JSON parsing,
-  /// or null if extraction fails.
   Map<String, dynamic>? _extractStructuredDataFromText(String text) {
     try {
       // Simple extraction if the response is not valid JSON
