@@ -315,4 +315,17 @@ class OpenAIService implements AIService {
     
     return buffer.toString();
   }
+
+  @override
+  Future<List<String>> suggestScreenshotsForCategory({
+    required String categoryDescription,
+    required List<String> availableScreenshotPaths,
+  }) async {
+    // Placeholder implementation for OpenAI
+    debugPrint('Suggesting screenshots for category using OpenAI is not yet implemented.');
+    // You could potentially adapt the analyzeImage logic or use a different OpenAI endpoint/prompt
+    // if you wanted to implement this feature for OpenAI in the future.
+    throw UnimplementedError('suggestScreenshotsForCategory is not implemented for OpenAIService');
+    // return Future.value([]); // Or return empty list if preferred over throwing error
+  }
 }

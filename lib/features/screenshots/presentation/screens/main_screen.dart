@@ -10,11 +10,16 @@ import '../providers/screenshot_providers.dart';
 import '../widgets/screenshot_grid.dart';
 import 'screenshot_detail_screen.dart';
 
+// Re-add the selectedCategoryIdProvider
+/// Provider to hold the ID of the currently selected category.
+/// `null` means "All Screenshots" is selected.
+final selectedCategoryIdProvider = StateProvider<String?>((ref) => null);
+
 /// The main navigation state provider
 final mainNavigationProvider =
     StateNotifierProvider<MainNavigationNotifier, int>((ref) {
-      return MainNavigationNotifier();
-    });
+  return MainNavigationNotifier();
+});
 
 /// Notifier for the main navigation state
 class MainNavigationNotifier extends StateNotifier<int> {

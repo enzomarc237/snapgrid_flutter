@@ -36,6 +36,12 @@ abstract class ScreenshotRepository {
   /// Toggles the favorite status of a screenshot
   Future<Screenshot> toggleFavorite(Screenshot screenshot);
 
+  /// Sets or unsets the category for a given screenshot.
+  ///
+  /// [filePath] The path of the screenshot to update.
+  /// [categoryId] The ID of the category to assign, or null to remove from category.
+  Future<Screenshot> setScreenshotCategory(String filePath, String? categoryId);
+
   /// Gets all available tags across all screenshots
   Future<List<String>> getAllTags();
 
@@ -44,4 +50,7 @@ abstract class ScreenshotRepository {
 
   /// Gets all favorite screenshots
   Future<List<Screenshot>> getFavoriteScreenshots();
+
+  /// Gets screenshots filtered by category ID
+  Future<List<Screenshot>> getScreenshotsByCategory(String categoryId);
 }

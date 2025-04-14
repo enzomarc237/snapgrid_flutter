@@ -1,3 +1,4 @@
+import '../../../../services/gemini_service.dart';
 import '../../domain/models/screenshot.dart';
 import '../../domain/repositories/screenshot_repository.dart';
 
@@ -8,22 +9,6 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   // Simulated in-memory store
   final List<Screenshot> _screenshots = [
-    Screenshot(
-      fileName: 'screenshot1.png',
-      filePath: '/path/to/screenshot1.png',
-      importDate: DateTime.now(),
-      tags: ['Tag1'],
-      isFavorite: true,
-      analysisComplete: false,
-    ),
-    Screenshot(
-      fileName: 'screenshot2.jpg',
-      filePath: '/path/to/screenshot2.jpg',
-      importDate: DateTime.now(),
-      tags: ['Tag2'],
-      isFavorite: false,
-      analysisComplete: false,
-    ),
   ];
 
   @override
@@ -55,15 +40,16 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   @override
   Future<List<Screenshot>> importScreenshots(List<String> sourcePaths) async {
-    final imported = sourcePaths.map((path) {
-      final fileName = path.split('/').last;
-      return Screenshot(
-        fileName: fileName,
-        filePath: path,
-        importDate: DateTime.now(),
-        analysisComplete: false,
-      );
-    }).toList();
+    final imported =
+        sourcePaths.map((path) {
+          final fileName = path.split('/').last;
+          return Screenshot(
+            fileName: fileName,
+            filePath: path,
+            importDate: DateTime.now(),
+            analysisComplete: false,
+          );
+        }).toList();
     _screenshots.addAll(imported);
     return imported;
   }
@@ -80,7 +66,9 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   @override
   Future<Screenshot> updateScreenshot(Screenshot screenshot) async {
-    final index = _screenshots.indexWhere((s) => s.filePath == screenshot.filePath);
+    final index = _screenshots.indexWhere(
+      (s) => s.filePath == screenshot.filePath,
+    );
     if (index != -1) {
       _screenshots[index] = screenshot;
       return screenshot;
@@ -90,25 +78,20 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   @override
   Future<Screenshot> analyzeScreenshot(Screenshot screenshot) async {
-    // Simulated analysis
+    // Pass screenshot to AI model for analysis
+    final analysisResults = await GeminiService().analyzeScreenshot(screenshot.filePath);
+
     final updatedScreenshot = screenshot.copyWith(
       analysisComplete: true,
-      analysisResults: {
-        'uiType': 'mobile',
-        'components': ['button', 'text', 'image'],
-        'extractedText': 'Sample text from the screenshot',
-        'colorScheme': {'primary': '#007AFF', 'secondary': '#FF9500'},
-        'layoutPattern': 'grid',
-      },
+      analysisResults: analysisResults,
     );
+    
     return updateScreenshot(updatedScreenshot);
   }
 
   @override
   Future<Screenshot> addTag(Screenshot screenshot, String tag) async {
-    final updated = screenshot.copyWith(
-      tags: [...screenshot.tags, tag],
-    );
+    final updated = screenshot.copyWith(tags: [...screenshot.tags, tag]);
     return updateScreenshot(updated);
   }
 
@@ -122,9 +105,7 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   @override
   Future<Screenshot> toggleFavorite(Screenshot screenshot) async {
-    final updated = screenshot.copyWith(
-      isFavorite: !screenshot.isFavorite,
-    );
+    final updated = screenshot.copyWith(isFavorite: !screenshot.isFavorite);
     return updateScreenshot(updated);
   }
 
@@ -145,5 +126,29 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
   @override
   Future<List<Screenshot>> getFavoriteScreenshots() async {
     return _screenshots.where((s) => s.isFavorite).toList();
+  }
+
+  @override
+  Future<Screenshot> setScreenshotCategory(
+    String filePath,
+    String? categoryId,
+  ) async {
+    final index = _screenshots.indexWhere((s) => s.filePath == filePath);
+    if (index != -1) {
+      final originalScreenshot = _screenshots[index];
+      // Use copyWith and the ValueGetter helper to handle null explicitly
+      final updatedScreenshot = originalScreenshot.copyWith(
+        categoryIdNullable: () => categoryId,
+      );
+      _screenshots[index] = updatedScreenshot;
+      return updatedScreenshot;
+    } else {
+      throw Exception('Screenshot with path $filePath not found');
+    }
+  }
+
+  @override
+  Future<List<Screenshot>> getScreenshotsByCategory(String categoryId) async {
+    return _screenshots.where((s) => s.categoryId == categoryId).toList();
   }
 }

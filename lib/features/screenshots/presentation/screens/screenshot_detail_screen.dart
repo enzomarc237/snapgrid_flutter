@@ -52,9 +52,30 @@ class ScreenshotDetailScreen extends ConsumerWidget {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(screenshot.filePath),
-                              fit: BoxFit.contain,
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Image.file(
+                                    File(screenshot.filePath),
+                                    fit: BoxFit.fill,
+                                  ),
+                                ),
+                                Align(
+                                  alignment: Alignment.topRight,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: MacosIconButton(
+                                      icon: MacosIcon(
+                                        CupertinoIcons.heart,
+                                        color: Colors.red,
+                                        size: 28,
+                                      ),
+                                      boxConstraints: BoxConstraints(),
+                                      onPressed: () {},
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -88,35 +109,48 @@ class ScreenshotDetailScreen extends ConsumerWidget {
   Widget _buildToolbar(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        PushButton(
-          controlSize: ControlSize.regular,
-          secondary: true,
-          child: const Text('Back'),
+        MacosIconButton(
+          icon: MacosIcon(
+            CupertinoIcons.arrow_left_circle,
+            size: 24.0,
+            color: MacosTheme.of(context).iconTheme.color,
+          ),
+          semanticLabel: 'Back',
+          boxConstraints: BoxConstraints(minHeight: 32.0, minWidth: 32.0),
           onPressed: () {
             ref.read(selectedScreenshotProvider.notifier).state = null;
           },
         ),
         const Spacer(),
-        PushButton(
-          controlSize: ControlSize.regular,
-          secondary: true,
-          child: const Text('Delete'),
+        MacosIconButton(
+          icon: MacosIcon(
+            CupertinoIcons.trash,
+            size: 24.0,
+            color: MacosTheme.of(context).iconTheme.color,
+          ),
+          semanticLabel: 'Back',
+          boxConstraints: BoxConstraints(minHeight: 32.0, minWidth: 32.0),
+          hoverColor: MacosTheme.of(context).iconButtonTheme.hoverColor,
+          disabledColor: MacosTheme.of(context).iconButtonTheme.disabledColor,
+          backgroundColor:
+              MacosTheme.of(context).iconButtonTheme.backgroundColor,
           onPressed: () {
-            ref
-                .read(screenshotActionsProvider)
-                .deleteScreenshot(screenshot, context);
+            ref.read(selectedScreenshotProvider.notifier).state = null;
           },
         ),
         const SizedBox(width: 8),
-        PushButton(
-          controlSize: ControlSize.regular,
-          child: Row(
-            children: [
-              const MacosIcon(CupertinoIcons.wand_stars, size: 16),
-              const SizedBox(width: 4),
-              Text(screenshot.analysisComplete ? 'Re-analyze' : 'Analyze'),
-            ],
+        MacosIconButton(
+          icon: MacosIcon(
+            CupertinoIcons.qrcode_viewfinder,
+            size: 24.0,
+            color: MacosTheme.of(context).iconTheme.color,
           ),
+          semanticLabel: 'Back',
+          boxConstraints: BoxConstraints(minHeight: 32.0, minWidth: 32.0),
+          hoverColor: MacosTheme.of(context).iconButtonTheme.hoverColor,
+          disabledColor: MacosTheme.of(context).iconButtonTheme.disabledColor,
+          backgroundColor:
+              MacosTheme.of(context).iconButtonTheme.backgroundColor,
           onPressed: () {
             ref
                 .read(screenshotActionsProvider)

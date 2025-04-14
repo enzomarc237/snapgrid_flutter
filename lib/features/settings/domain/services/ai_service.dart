@@ -65,4 +65,15 @@ abstract class AIService {
     AnalysisOptions options = const AnalysisOptions(),
     void Function(int completed, int total)? progressCallback,
   });
+
+  /// Suggests screenshots that match a given category description.
+  ///
+  /// [categoryDescription] The textual description of the category.
+  /// [availableScreenshotPaths] A list of file paths for the screenshots to consider.
+  /// Returns a list of file paths for the suggested screenshots.
+  Future<List<String>> suggestScreenshotsForCategory({
+    required String categoryDescription,
+    required List<String> availableScreenshotPaths,
+    // Optional: Could pass more context like existing tags/analysis results per screenshot
+  });
 }

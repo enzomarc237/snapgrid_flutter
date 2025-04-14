@@ -24,6 +24,9 @@ class Screenshot {
   /// Whether this screenshot is marked as a favorite
   final bool isFavorite;
 
+  /// The ID of the category this screenshot belongs to, if any.
+  final String? categoryId;
+
   /// Creates a Screenshot instance
   const Screenshot({
     required this.fileName,
@@ -33,6 +36,7 @@ class Screenshot {
     this.analysisResults,
     this.tags = const [],
     this.isFavorite = false,
+    this.categoryId, // Added categoryId
   });
 
   /// Creates a Screenshot from JSON data
@@ -45,6 +49,7 @@ class Screenshot {
       analysisResults: json['analysisResults'] as Map<String, dynamic>?,
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
       isFavorite: json['isFavorite'] as bool? ?? false,
+      categoryId: json['categoryId'] as String?, // Added categoryId
     );
   }
 
@@ -58,6 +63,7 @@ class Screenshot {
       'analysisResults': analysisResults,
       'tags': tags,
       'isFavorite': isFavorite,
+      'categoryId': categoryId, // Added categoryId
     };
   }
 
@@ -70,7 +76,10 @@ class Screenshot {
     Map<String, dynamic>? analysisResults,
     List<String>? tags,
     bool? isFavorite,
+    String? categoryId, // Added categoryId
+    ValueGetter<String?>? categoryIdNullable, // Helper for explicit null setting
   }) {
+    final effectiveCategoryId = categoryIdNullable != null ? categoryIdNullable() : (categoryId ?? this.categoryId);
     return Screenshot(
       fileName: fileName ?? this.fileName,
       filePath: filePath ?? this.filePath,
@@ -79,6 +88,7 @@ class Screenshot {
       analysisResults: analysisResults ?? this.analysisResults,
       tags: tags ?? this.tags,
       isFavorite: isFavorite ?? this.isFavorite,
+      categoryId: effectiveCategoryId, // Use calculated categoryId
     );
   }
 
@@ -92,7 +102,8 @@ class Screenshot {
           importDate.isAtSameMomentAs(other.importDate) &&
           analysisComplete == other.analysisComplete &&
           listEquals(tags, other.tags) &&
-          isFavorite == other.isFavorite;
+          isFavorite == other.isFavorite &&
+          categoryId == other.categoryId; // Added categoryId
 
   @override
   int get hashCode =>
@@ -101,5 +112,6 @@ class Screenshot {
       importDate.hashCode ^
       analysisComplete.hashCode ^
       Object.hashAll(tags) ^
-      isFavorite.hashCode;
+      isFavorite.hashCode ^
+      categoryId.hashCode; // Added categoryId
 }

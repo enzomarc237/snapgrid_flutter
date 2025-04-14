@@ -326,7 +326,7 @@ class GeminiService implements AIService {
       buffer.writeln('- designSystem (detected design system if any)');
     }
 
-    buffer.writeln('- uiType (web/mobile/desktop)');
+    buffer.writeln('- uiType (web/mobile/desktop/watch/tv/vr/other)');
 
     if (options.detectBoundingBoxes) {
       buffer.writeln(
@@ -449,6 +449,92 @@ class GeminiService implements AIService {
     } catch (e) {
       debugPrint('Error extracting structured data: $e');
       return null;
+    }
+  }
+
+  @override
+  Future<List<String>> suggestScreenshotsForCategory({
+    required String categoryDescription,
+    required List<String> availableScreenshotPaths,
+  }) async {
+    try {
+      // 1. Verify configuration
+      if (!await isConfigured()) {
+        debugPrint('Gemini not configured for suggestion.');
+        return []; // Return empty list if not configured
+      }
+
+      // 2. Get the selected model (prefer text-based models if possible)
+      // Using flash as it's generally faster and cheaper for text tasks
+      final modelId = 'gemini-1.5-flash'; // Or allow selection if needed
+
+      // 3. Construct the prompt
+      final promptBuffer = StringBuffer();
+      promptBuffer.writeln('You are an assistant helping to categorize screenshots.');
+      promptBuffer.writeln('Given the following category description and list of screenshot file paths, please identify which screenshots are most relevant to the description.');
+      promptBuffer.writeln('\nCategory Description:');
+      promptBuffer.writeln('"$categoryDescription"');
+      promptBuffer.writeln('\nAvailable Screenshot File Paths:');
+      availableScreenshotPaths.forEach((path) => promptBuffer.writeln('- $path'));
+      promptBuffer.writeln('\nPlease return ONLY a JSON list containing the file paths of the relevant screenshots.');
+      promptBuffer.writeln('Example JSON output: ["/path/to/relevant_screenshot1.png", "/path/to/relevant_screenshot3.png"]');
+      promptBuffer.writeln('If no screenshots seem relevant, return an empty JSON list: []');
+
+      final prompt = promptBuffer.toString();
+
+      // 4. Make the API request
+      debugPrint('Sending suggestion prompt to Gemini ($modelId)...');
+      final response = await _gemini
+          .prompt(model: modelId, parts: [TextPart(prompt)])
+          .timeout(const Duration(seconds: 45)); // Increased timeout for potentially longer task
+
+      // 5. Handle and parse the response
+      if (response?.output == null) {
+        debugPrint('No response from Gemini for suggestion.');
+        return [];
+      }
+
+      final rawText = response!.output!;
+      debugPrint('Gemini suggestion response raw: $rawText');
+
+      // Attempt to extract JSON list directly
+      try {
+         // Find the start and end of the JSON list
+        final jsonStartIndex = rawText.indexOf('[');
+        final jsonEndIndex = rawText.lastIndexOf(']');
+
+        if (jsonStartIndex != -1 && jsonEndIndex != -1 && jsonEndIndex >= jsonStartIndex) {
+          final jsonStr = rawText.substring(jsonStartIndex, jsonEndIndex + 1);
+          debugPrint('Extracted JSON string: $jsonStr');
+          final decodedList = json.decode(jsonStr);
+          if (decodedList is List) {
+            // Filter the result to ensure only paths from the original list are returned
+            final suggestedPaths = decodedList.map((item) => item.toString()).toList();
+            final validPaths = suggestedPaths.where((path) => availableScreenshotPaths.contains(path)).toList();
+            debugPrint('Valid suggested paths: $validPaths');
+            return validPaths;
+          } else {
+             debugPrint('Decoded JSON is not a list.');
+             return [];
+          }
+        } else {
+          debugPrint('Could not find JSON list brackets in response.');
+          return []; // Return empty if no JSON list found
+        }
+      } catch (e) {
+        debugPrint('Error parsing Gemini suggestion JSON response: $e');
+        return []; // Return empty list on parsing error
+      }
+
+    } on SocketException {
+      debugPrint('Network connection failed during suggestion.');
+      return [];
+    } on TimeoutException {
+      debugPrint('Suggestion request timed out.');
+      return [];
+    } catch (e) {
+      debugPrint('Error suggesting screenshots: ${e.toString()}');
+      return []; // Return empty list on any other error
     }
   }
 }

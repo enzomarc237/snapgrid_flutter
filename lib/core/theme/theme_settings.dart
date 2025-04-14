@@ -47,7 +47,7 @@ class ThemeSettings {
   Map<String, dynamic> toJson() {
     return {
       'themeMode': themeMode.toString(),
-      'accentColor': accentColor.value,
+      'accentColor': accentColor.toARGB32(),
       'highContrast': highContrast,
     };
   }

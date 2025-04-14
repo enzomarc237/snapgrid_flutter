@@ -106,7 +106,12 @@ class KeyboardShortcuts {
 
   static void _focusSearch(WidgetRef ref) {
     final focusNode = ref.read(searchFocusNodeProvider);
-    focusNode.requestFocus();
+    // Request focus in the next frame to avoid focus overlay issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (focusNode.canRequestFocus) {
+        focusNode.requestFocus();
+      }
+    });
   }
 
   static void _clearFilters(WidgetRef ref) {

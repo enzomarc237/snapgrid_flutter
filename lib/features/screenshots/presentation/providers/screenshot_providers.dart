@@ -9,9 +9,14 @@ import '../../../../core/widgets/themed_progress_circle.dart';
 import '../../../../features/settings/presentation/providers/settings_providers.dart';
 import 'package:path/path.dart';
 
+import '../../../categories/presentation/providers/category_providers.dart'; // Needed for selectedCategoryIdProvider import? No, it's in main_screen.dart
 import '../../domain/models/screenshot.dart';
 import '../../domain/repositories/screenshot_repository.dart';
 import '../../data/repositories/screenshot_repository_impl.dart';
+// Import the provider defined in main_screen.dart - THIS IS NOT IDEAL
+// It's better to move selectedCategoryIdProvider to a shared location or this file.
+// For now, we assume it's accessible, but this might need refactoring.
+import '../screens/main_screen.dart'; // Temporary import for selectedCategoryIdProvider
 
 /// Provider for the screenshot repository
 final screenshotRepositoryProvider = Provider<ScreenshotRepository>((ref) {
@@ -84,7 +89,10 @@ final filteredScreenshotsProvider = Provider<AsyncValue<List<Screenshot>>>((
               // Check UI type in analysis results
               if (screenshot.analysisResults != null &&
                   screenshot.analysisResults!['uiType'] != null &&
-                  screenshot.analysisResults!['uiType'].toString().toLowerCase().contains(searchQuery)) {
+                  screenshot.analysisResults!['uiType']
+                      .toString()
+                      .toLowerCase()
+                      .contains(searchQuery)) {
                 return true;
               }
               return false;
@@ -117,6 +125,34 @@ final filteredScreenshotsProvider = Provider<AsyncValue<List<Screenshot>>>((
     error: (error, stackTrace) => screenshotsAsync,
   );
 });
+
+/// Provider that further filters screenshots based on the selected category.
+final categoryFilteredScreenshotsProvider =
+    Provider<AsyncValue<List<Screenshot>>>((ref) {
+      // Watch the previously filtered list (search, tag, favorite, sort)
+      final baseFilteredAsync = ref.watch(filteredScreenshotsProvider);
+      // Watch the selected category ID from the sidebar
+      final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
+
+      // If no category is selected, return the base filtered list
+      if (selectedCategoryId == null) {
+        return baseFilteredAsync;
+      }
+
+      // If a category is selected, filter the base list further
+      return baseFilteredAsync.when(
+        data: (screenshots) {
+          final categoryFiltered =
+              screenshots
+                  .where((s) => s.categoryId == selectedCategoryId)
+                  .toList();
+          return AsyncValue.data(categoryFiltered);
+        },
+        // Pass through loading and error states
+        loading: () => baseFilteredAsync,
+        error: (error, stackTrace) => baseFilteredAsync,
+      );
+    });
 
 /// Provider for the currently selected screenshot (for detail view)
 final selectedScreenshotProvider = StateProvider<String?>((ref) => null);
@@ -346,10 +382,17 @@ class ScreenshotActions {
   ) async {
     try {
       final repository = _ref.read(screenshotRepositoryProvider);
-      await repository.importScreenshots(paths);
+      final importedScreenshots = await repository.importScreenshots(paths);
 
-      // Refresh the list after importing
-      _ref.invalidate(screenshotsProvider);
+      // Refresh the list after importing (already done in importScreenshots)
+      _ref.invalidate(
+        screenshotsProvider,
+      ); // Not needed, invalidate is in repository impl
+
+      // Trigger analysis for each imported screenshot
+      // for (final screenshot in importedScreenshots) {
+      // analyzeScreenshot(screenshot, context); // Call analyze for each
+      // }
 
       // Show success message
       if (context.mounted && paths.isNotEmpty) {
@@ -512,7 +555,9 @@ class ScreenshotActions {
             await repository.deleteScreenshot(screenshot);
             successCount++;
           } catch (e) {
-            debugPrint('Error deleting screenshot ${basename(screenshot.filePath)}: $e');
+            debugPrint(
+              'Error deleting screenshot ${basename(screenshot.filePath)}: $e',
+            );
           }
         }
 
@@ -699,7 +744,9 @@ class ScreenshotActions {
           await repository.analyzeScreenshot(screenshot);
           successCount++;
         } catch (e) {
-          debugPrint('Error analyzing screenshot ${basename(screenshot.filePath)}: $e');
+          debugPrint(
+            'Error analyzing screenshot ${basename(screenshot.filePath)}: $e',
+          );
           failCount++;
         }
       }
