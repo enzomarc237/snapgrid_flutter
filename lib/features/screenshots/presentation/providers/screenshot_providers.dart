@@ -20,8 +20,9 @@ import '../screens/main_screen.dart'; // Temporary import for selectedCategoryId
 
 /// Provider for the screenshot repository
 final screenshotRepositoryProvider = Provider<ScreenshotRepository>((ref) {
-  final aiService = ref.watch(activeAIServiceProvider);
-  return ScreenshotRepositoryImpl(aiService: aiService) as ScreenshotRepository;
+  // Pass the ref to the repository implementation
+  return ScreenshotRepositoryImpl(ref: ref);
+  // No need to cast if ScreenshotRepositoryImpl implements ScreenshotRepository
 });
 
 /// Provider for all screenshots
