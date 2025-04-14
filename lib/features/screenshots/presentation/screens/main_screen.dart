@@ -105,34 +105,59 @@ class MainScreen extends ConsumerWidget {
                   // --- PAGES Section ---
                   const SidebarSectionTitle('Pages'),
                   // Replace SidebarItems with individual MacosListTile for fixed items
-                  MacosListTile(
-                    leading: const MacosIcon(CupertinoIcons.photo_on_rectangle),
-                    title: Text(
-                      'Screenshots', // Represents "All"
-                      style: TextStyle(
-                        color: sidebarIndex == 0 ? MacosTheme.of(context).primaryColor : null,
+                  // Apply custom styling for selected item
+                  () {
+                    final isSelected = sidebarIndex == 0;
+                    final color = isSelected ? MacosColors.white : MacosTheme.of(context).typography.body.color;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Add some margin
+                      decoration: BoxDecoration(
+                        color: isSelected ? MacosTheme.of(context).primaryColor : null,
+                        borderRadius: BorderRadius.circular(6), // Rounded corners
                       ),
-                    ),
-                    onClick: () {
-                      ref.read(mainNavigationProvider.notifier).setPageIndex(0);
-                      ref.read(selectedCategoryIdProvider.notifier).state = null;
-                      ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
-                    },
-                  ),
-                  MacosListTile(
-                    leading: const MacosIcon(CupertinoIcons.settings),
-                    title: Text(
-                      'Settings',
-                       style: TextStyle(
-                        color: sidebarIndex == 1 ? MacosTheme.of(context).primaryColor : null,
+                      child: MacosListTile(
+                        leading: MacosIcon(
+                          CupertinoIcons.photo_on_rectangle,
+                          color: color, // Set icon color
+                        ),
+                        title: Text(
+                          'Screenshots', // Represents "All"
+                          style: TextStyle(color: color), // Set text color
+                        ),
+                        onClick: () {
+                          ref.read(mainNavigationProvider.notifier).setPageIndex(0);
+                          ref.read(selectedCategoryIdProvider.notifier).state = null;
+                          ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
+                        },
                       ),
-                    ),
-                    onClick: () {
-                       ref.read(mainNavigationProvider.notifier).setPageIndex(1);
-                       ref.read(selectedCategoryIdProvider.notifier).state = null; // Clear category selection
-                       ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
-                    },
-                  ),
+                    );
+                  }(), // Immediately invoke the closure
+                  () {
+                    final isSelected = sidebarIndex == 1;
+                    final color = isSelected ? MacosColors.white : MacosTheme.of(context).typography.body.color;
+                     return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Add some margin
+                      decoration: BoxDecoration(
+                        color: isSelected ? MacosTheme.of(context).primaryColor : null,
+                        borderRadius: BorderRadius.circular(6), // Rounded corners
+                      ),
+                       child: MacosListTile(
+                        leading: MacosIcon(
+                          CupertinoIcons.settings,
+                          color: color, // Set icon color
+                        ),
+                        title: Text(
+                          'Settings',
+                           style: TextStyle(color: color), // Set text color
+                        ),
+                        onClick: () {
+                           ref.read(mainNavigationProvider.notifier).setPageIndex(1);
+                           ref.read(selectedCategoryIdProvider.notifier).state = null; // Clear category selection
+                           ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
+                        },
+                      ),
+                    );
+                  }(), // Immediately invoke the closure
 
                   // --- CATEGORIES Section ---
                   const SidebarSectionTitle('Catégories'),
@@ -147,21 +172,29 @@ class MainScreen extends ConsumerWidget {
                              final category = categoryList[index];
                              final categorySidebarIndex = index + 2; // Offset by 2
                              final isSelected = sidebarIndex == categorySidebarIndex;
-                             return MacosListTile(
-                               leading: MacosIcon(category.icon),
-                               title: Text(
-                                 category.title,
-                                 style: TextStyle(
-                                   color: isSelected ? MacosTheme.of(context).primaryColor : null,
-                                 ),
+                             final color = isSelected ? MacosColors.white : MacosTheme.of(context).typography.body.color;
+                             return Container(
+                               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Add some margin
+                               decoration: BoxDecoration(
+                                 color: isSelected ? MacosTheme.of(context).primaryColor : null,
+                                 borderRadius: BorderRadius.circular(6), // Rounded corners
                                ),
-                               // Use onClick instead of onPressed for MacosListTile
-                               onClick: () {
-                                 ref.read(mainNavigationProvider.notifier).setPageIndex(0); // Always show screenshot view
-                                 ref.read(selectedCategoryIdProvider.notifier).state = category.id;
-                                 ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
-                               },
-                               // Manual highlighting (optional, MacosListTile might handle some)
+                               child: MacosListTile(
+                                 leading: MacosIcon(
+                                   category.icon,
+                                   color: color, // Set icon color
+                                 ),
+                                 title: Text(
+                                   category.title,
+                                   style: TextStyle(color: color), // Set text color
+                                 ),
+                                 // Use onClick instead of onPressed for MacosListTile
+                                 onClick: () {
+                                   ref.read(mainNavigationProvider.notifier).setPageIndex(0); // Always show screenshot view
+                                   ref.read(selectedCategoryIdProvider.notifier).state = category.id;
+                                   ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
+                                 },
+                               ),
                              );
                            },
                          );
@@ -178,18 +211,19 @@ class MainScreen extends ConsumerWidget {
                   const Spacer(), // Pushes the button to the bottom
                   Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: PushButton(
-                      controlSize: ControlSize.large,
-                      secondary: true, // Make it less prominent
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                           MacosIcon(CupertinoIcons.add_circled), // Example icon
-                           SizedBox(width: 8),
-                           Text('Gérer Catégories'),
-                        ],
+                    // Use MacosListTile for consistency
+                    child: MacosListTile(
+                      leading: const MacosIcon(
+                        CupertinoIcons.add_circled,
+                        // Use default color or a subtle one
+                        color: MacosColors.systemGrayColor,
                       ),
-                      onPressed: () {
+                      title: const Text(
+                        'Gérer Catégories',
+                         // Use default color or a subtle one
+                        style: TextStyle(color: MacosColors.systemGrayColor),
+                      ),
+                      onClick: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => const ManageCategoriesScreen(),
