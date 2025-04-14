@@ -41,7 +41,8 @@ class SidebarSectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12.0, 16.0, 12.0, 4.0), // Adjusted padding
+      // Increase vertical padding for section titles
+      padding: const EdgeInsets.fromLTRB(12.0, 20.0, 12.0, 8.0),
       child: Text(
         title.toUpperCase(),
         style: MacosTheme.of(context).typography.body.copyWith(
@@ -110,7 +111,8 @@ class MainScreen extends ConsumerWidget {
                     final isSelected = sidebarIndex == 0;
                     final color = isSelected ? MacosColors.white : MacosTheme.of(context).typography.body.color;
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Add some margin
+                      // Increase vertical margin between items
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: isSelected ? MacosTheme.of(context).primaryColor : null,
                         borderRadius: BorderRadius.circular(6), // Rounded corners
@@ -136,7 +138,8 @@ class MainScreen extends ConsumerWidget {
                     final isSelected = sidebarIndex == 1;
                     final color = isSelected ? MacosColors.white : MacosTheme.of(context).typography.body.color;
                      return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Add some margin
+                      // Increase vertical margin between items
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: isSelected ? MacosTheme.of(context).primaryColor : null,
                         borderRadius: BorderRadius.circular(6), // Rounded corners
@@ -174,7 +177,8 @@ class MainScreen extends ConsumerWidget {
                              final isSelected = sidebarIndex == categorySidebarIndex;
                              final color = isSelected ? MacosColors.white : MacosTheme.of(context).typography.body.color;
                              return Container(
-                               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Add some margin
+                               // Increase vertical margin between items
+                               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                decoration: BoxDecoration(
                                  color: isSelected ? MacosTheme.of(context).primaryColor : null,
                                  borderRadius: BorderRadius.circular(6), // Rounded corners
@@ -210,12 +214,13 @@ class MainScreen extends ConsumerWidget {
                   // --- Manage Categories Button ---
                   const Spacer(), // Pushes the button to the bottom
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    // Reduce padding around the bottom button
+                    padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 16.0), // Less top/horizontal, keep bottom
                     // Use MacosListTile for consistency
                     child: MacosListTile(
                       leading: const MacosIcon(
                         CupertinoIcons.add_circled,
-                        // Use default color or a subtle one
+                        // Use default color or a subtle one 
                         color: MacosColors.systemGrayColor,
                       ),
                       title: const Text(
