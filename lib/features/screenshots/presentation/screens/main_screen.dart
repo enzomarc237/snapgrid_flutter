@@ -104,30 +104,34 @@ class MainScreen extends ConsumerWidget {
                 children: [
                   // --- PAGES Section ---
                   const SidebarSectionTitle('Pages'),
-                  SidebarItems(
-                    currentIndex: sidebarIndex, // Use calculated index for highlighting
-                    onChanged: (index) {
-                      if (index == 0) { // Screenshots (All)
-                        ref.read(mainNavigationProvider.notifier).setPageIndex(0);
-                        ref.read(selectedCategoryIdProvider.notifier).state = null;
-                        ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
-                      } else if (index == 1) { // Settings
-                        ref.read(mainNavigationProvider.notifier).setPageIndex(1);
-                        ref.read(selectedCategoryIdProvider.notifier).state = null; // Clear category selection
-                        ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
-                      }
-                      // Category selection handled below
+                  // Replace SidebarItems with individual MacosListTile for fixed items
+                  MacosListTile(
+                    leading: const MacosIcon(CupertinoIcons.photo_on_rectangle),
+                    title: Text(
+                      'Screenshots', // Represents "All"
+                      style: TextStyle(
+                        color: sidebarIndex == 0 ? MacosTheme.of(context).primaryColor : null,
+                      ),
+                    ),
+                    onClick: () {
+                      ref.read(mainNavigationProvider.notifier).setPageIndex(0);
+                      ref.read(selectedCategoryIdProvider.notifier).state = null;
+                      ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
                     },
-                    items: const [
-                      SidebarItem(
-                        leading: MacosIcon(CupertinoIcons.photo_on_rectangle),
-                        label: Text('Screenshots'), // Represents "All"
+                  ),
+                  MacosListTile(
+                    leading: const MacosIcon(CupertinoIcons.settings),
+                    title: Text(
+                      'Settings',
+                       style: TextStyle(
+                        color: sidebarIndex == 1 ? MacosTheme.of(context).primaryColor : null,
                       ),
-                      SidebarItem(
-                        leading: MacosIcon(CupertinoIcons.settings),
-                        label: Text('Settings'),
-                      ),
-                    ],
+                    ),
+                    onClick: () {
+                       ref.read(mainNavigationProvider.notifier).setPageIndex(1);
+                       ref.read(selectedCategoryIdProvider.notifier).state = null; // Clear category selection
+                       ref.read(selectedScreenshotProvider.notifier).state = null; // Clear screenshot selection
+                    },
                   ),
 
                   // --- CATEGORIES Section ---
