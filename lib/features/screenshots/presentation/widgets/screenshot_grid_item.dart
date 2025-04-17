@@ -1,4 +1,5 @@
 import 'dart:async'; // Import for Completer
+import 'dart:convert'; // Import for jsonEncode
 import 'dart:io';
 import 'dart:ui' as ui; // Needed for ui.Image
 
@@ -103,7 +104,7 @@ class _ScreenshotGridItemState extends ConsumerState<ScreenshotGridItem> {
             ? _imageSize!.width / _imageSize!.height
             : 16 / 10; // Default aspect ratio
 
-    return GestureDetector(
+    final screenshotContent = GestureDetector(
       onTap: () {
         // Read ref inside the callback where needed
         final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
@@ -279,6 +280,33 @@ class _ScreenshotGridItemState extends ConsumerState<ScreenshotGridItem> {
             ],
           ),
         ),
+      ),
+    );
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.grab,
+      child: Draggable<String>( // Pass ID and FilePath as JSON string
+        key: ValueKey(widget.screenshot.id),
+        data: jsonEncode({'id': widget.screenshot.id, 'filePath': widget.screenshot.filePath}),
+        feedback: SizedBox(
+          width: 100 * aspectRatio, // Reduced size feedback
+          height: 100,
+          child: Opacity(
+            opacity: 0.8,
+            child: Image.file(
+              File(widget.screenshot.filePath),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        onDragStarted: () {
+          // debugPrint('Drag started for ${widget.screenshot.filePath}'); // Removed log
+        },
+        childWhenDragging: Opacity(
+          opacity: 0.5,
+          child: screenshotContent,
+        ),
+        child: screenshotContent,
       ),
     );
   }

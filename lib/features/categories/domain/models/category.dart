@@ -14,7 +14,18 @@ class Category {
     required this.icon,
   });
 
-  // Optional: Add methods for serialization/deserialization if needed
-  // factory Category.fromJson(Map<String, dynamic> json) => ...
-  // Map<String, dynamic> toJson() => ...
+  // Serialization/deserialization methods for persistence
+  factory Category.fromJson(Map<String, dynamic> json) => Category(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        description: json['description'] as String? ?? '',
+        icon: IconData(json['iconCodePoint'] as int, fontFamily: 'MaterialIcons'), // Or handle icon deserialization appropriately
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'iconCodePoint': icon.codePoint, // Serialize IconData to storable format
+      };
 }

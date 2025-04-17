@@ -50,7 +50,7 @@ class ScreenshotDetailScreen extends ConsumerWidget {
                               width: 0.5,
                             ),
                           ),
-                          child: ClipRRect(
+                          child: ClipRRect( 
                             borderRadius: BorderRadius.circular(8),
                             child: Stack(
                               children: [

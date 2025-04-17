@@ -7,6 +7,9 @@ import 'core/theme/theme_providers.dart';
 import 'core/utils/platform_menu_bar.dart';
 import 'core/utils/platform_utils.dart';
 import 'core/utils/window_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+
+import 'features/categories/presentation/providers/category_providers.dart'; // Import category providers
 import 'features/screenshots/presentation/screens/main_screen.dart';
 
 /// Global navigator key for accessing navigator from anywhere
@@ -20,7 +23,18 @@ void main() async {
     await WindowUtils.configureMacosWindow();
   }
 
-  runApp(const ProviderScope(child: SnapGridApp()));
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        // Override the SharedPreferences provider with the initialized instance
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const SnapGridApp(),
+    ),
+  );
 }
 
 /// The main application widget

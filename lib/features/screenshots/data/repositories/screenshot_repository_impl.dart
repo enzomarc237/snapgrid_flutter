@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Import Riverpod
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart'; // Import Uuid package
 // path_provider is likely needed indirectly via appDirectoriesProvider
 // import 'package:path_provider/path_provider.dart';
 
@@ -18,10 +19,11 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   ScreenshotRepositoryImpl({required this.ref}); // Updated constructor
 
-  // Helper to get the path for the metadata JSON file
-  String _getMetadataPath(String imagePath) {
-    // Ensure the extension is always .json, even if imagePath had no extension
-    return '${p.withoutExtension(imagePath)}.json';
+  // Helper to get the path for the metadata JSON file within the metadata directory
+  Future<String> _getMetadataPath(String imagePath) async { // Make it async
+    final metadataDir = await _getAndEnsureDirectory('metadata'); // Get metadata dir
+    final fileNameWithoutExt = p.basenameWithoutExtension(imagePath); // Get filename without ext
+    return p.join(metadataDir.path, '$fileNameWithoutExt.json'); // Construct path in metadata dir
   }
 
   // Helper to get the directory path from the provider and ensure it exists
@@ -88,10 +90,12 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   @override
   Future<Screenshot?> getScreenshotByPath(String imagePath) async {
-    final metadataPath = _getMetadataPath(imagePath);
+    // Await the result of the async helper function
+    final metadataPath = await _getMetadataPath(imagePath);
     try {
       final file = File(metadataPath);
-      if (await file.exists()) {
+      final fileExists = await file.exists();
+      if (fileExists) {
         final jsonString = await file.readAsString();
         final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
         // Verify image exists before returning
@@ -107,6 +111,17 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
       }
     } catch (e) {
       print('Error reading metadata for $imagePath (metadata path: $metadataPath): $e');
+      return null;
+    }
+  }
+
+  // Helper method to get screenshot by ID (less efficient than by path)
+  Future<Screenshot?> getScreenshotById(String id) async {
+    final allScreenshots = await getAllScreenshots();
+    try {
+      return allScreenshots.firstWhere((s) => s.id == id);
+    } catch (e) {
+      // firstWhere throws if no element is found
       return null;
     }
   }
@@ -142,13 +157,11 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
   // --- Write Operations ---
 
   @override
-  Future<Screenshot> importScreenshot(String sourcePath) async {
+  Future<Screenshot> importScreenshot(String sourcePath, {String? categoryId}) async {
     // 1. Determine destination paths
     final imagesDir = await _getAndEnsureDirectory('images');
     final metadataDir = await _getAndEnsureDirectory('metadata');
     final fileName = p.basename(sourcePath);
-    // Create a unique filename if necessary to avoid conflicts
-    // For simplicity, we'll assume unique names or overwrite behavior is handled elsewhere if needed.
     final destImagePath = p.join(imagesDir.path, fileName);
     final destMetadataPath = p.join(metadataDir.path, '${p.withoutExtension(fileName)}.json');
 
@@ -171,12 +184,14 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
     // 4. Create Screenshot object with the *destination* path
     final screenshot = Screenshot(
+      id: const Uuid().v4(),
       fileName: fileName,
-      filePath: destImagePath, // Use the path inside the app support dir
+      filePath: destImagePath,
       importDate: DateTime.now(),
       analysisComplete: false,
-      tags: [], // Ensure tags list is initialized
-      analysisResults: {}, // Ensure map is initialized
+      tags: [],
+      analysisResults: {},
+      categoryId: categoryId, // Assign category if provided
     );
 
     // 5. Persist initial metadata
@@ -184,25 +199,20 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
       final jsonMap = screenshot.toJson();
       final jsonString = jsonEncode(jsonMap);
       await File(destMetadataPath).writeAsString(jsonString);
-      print('Created metadata at: $destMetadataPath');
-      // Invalidate provider after successful import
-      ref.invalidate(screenshotsProvider);
       return screenshot;
     } catch (e) {
       print('Error creating initial metadata for ${screenshot.filePath}: $e');
-      // Attempt to clean up the copied image file if metadata fails
       try { await File(destImagePath).delete(); } catch (_) {}
       throw Exception('Failed to create metadata for ${screenshot.filePath}: $e');
     }
   }
 
   @override
-  Future<List<Screenshot>> importScreenshots(List<String> sourcePaths) async {
+  Future<List<Screenshot>> importScreenshots(List<String> sourcePaths, {String? categoryId}) async {
     final List<Screenshot> successfullyImported = [];
     for (final sourcePath in sourcePaths) {
       try {
-        // Reuse single import logic for each path
-        final importedScreenshot = await importScreenshot(sourcePath);
+        final importedScreenshot = await importScreenshot(sourcePath, categoryId: categoryId);
         successfullyImported.add(importedScreenshot);
       } catch (e) {
         print('Failed to import $sourcePath: $e');
@@ -211,7 +221,6 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
     }
     // Invalidate provider once after batch import attempt is complete
     if (successfullyImported.isNotEmpty) {
-       ref.invalidate(screenshotsProvider);
     }
     return successfullyImported;
   }
@@ -245,7 +254,8 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
     bool metadataDeleted = false;
     // --- Delete metadata file first ---
     try {
-      final metadataPath = _getMetadataPath(screenshot.filePath);
+      // Await the result of the async helper function
+      final metadataPath = await _getMetadataPath(screenshot.filePath);
       final file = File(metadataPath);
       if (await file.exists()) {
         await file.delete();
@@ -287,20 +297,31 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
   Future<Screenshot> updateScreenshot(Screenshot screenshot) async {
     // Directly write the updated data to the JSON file.
     try {
-      final metadataPath = _getMetadataPath(screenshot.filePath);
+      // Await the result of the async helper function
+      final metadataPath = await _getMetadataPath(screenshot.filePath);
       final imagePath = screenshot.filePath;
+      // print('Updating metadata: $metadataPath with data: ${screenshot.toJson()}'); // Removed log
 
       // Ensure the image file still exists before updating metadata
       if (!await File(imagePath).exists()) {
-         throw Exception('Image file $imagePath not found for update.');
+        print('Image file $imagePath not found for update, deleting metadata.');
+        // Await the result of the async helper function
+        final metadataPath = await _getMetadataPath(imagePath);
+        try {
+          await File(metadataPath).delete();
+        } catch (e) {
+          print('Error deleting metadata file for non-existent image: $e');
+        }
+        throw Exception('Image file $imagePath not found for update.');
       }
       // Ensure the metadata directory exists
       await _getAndEnsureDirectory('metadata');
 
       final jsonMap = screenshot.toJson();
       final jsonString = jsonEncode(jsonMap);
+      // print('Updating metadata: $metadataPath with data: $jsonString'); // Removed log
       await File(metadataPath).writeAsString(jsonString);
-      print('Updated metadata: $metadataPath');
+      // print('Updated metadata: $metadataPath'); // Removed log
 
       // Invalidate provider to reflect changes
       ref.invalidate(screenshotsProvider);
@@ -363,18 +384,55 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
   }
 
   @override
-  Future<Screenshot> setScreenshotCategory(String filePath, String? categoryId) async {
-    // Fetch the current screenshot data first
-    final originalScreenshot = await getScreenshotByPath(filePath);
-    if (originalScreenshot == null) {
-      throw Exception('Screenshot with path $filePath not found for category update');
+  // Update signature to accept screenshotPath
+  Future<Screenshot> setScreenshotCategory(String screenshotId, String screenshotPath, String? categoryId) async {
+    // print('setScreenshotCategory called with screenshotId: $screenshotId, path: $screenshotPath, categoryId: $categoryId'); // Removed log
+    // Directly read, update, and write the specific metadata file
+    // Await the result of the async helper function
+    final metadataPath = await _getMetadataPath(screenshotPath);
+    // print('Attempting to update category directly in: $metadataPath'); // Removed log
+
+    try {
+      final file = File(metadataPath);
+      if (!await file.exists()) {
+        // print('Metadata file $metadataPath not found for direct update.'); // Removed log
+        throw Exception('Screenshot metadata not found at $metadataPath for category update');
+      }
+
+      final jsonString = await file.readAsString();
+      final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      // Create a Screenshot object from JSON to easily update it
+      // Ensure backward compatibility for 'id'
+      jsonMap['id'] ??= const Uuid().v4(); // Assign ID if missing
+      final screenshot = Screenshot.fromJson(jsonMap);
+
+      // Check if the ID matches (optional sanity check)
+      if (screenshot.id != screenshotId) {
+         // print('Warning: ID mismatch in metadata file $metadataPath. Expected $screenshotId, found ${screenshot.id}'); // Removed log
+         // Decide how to handle mismatch: throw error, update anyway, etc.
+         // For now, we'll proceed but log the warning.
+      }
+
+
+      // Update the category ID
+      final updatedScreenshot = screenshot.copyWith(
+        categoryIdNullable: () => categoryId,
+      );
+
+      // Write the updated JSON back to the file
+      final updatedJsonMap = updatedScreenshot.toJson();
+      final updatedJsonString = jsonEncode(updatedJsonMap);
+      await file.writeAsString(updatedJsonString);
+      // print('Successfully updated category in $metadataPath'); // Removed log
+
+      // Invalidation will be handled by the caller (ScreenshotActions)
+      return updatedScreenshot; // Return the updated object
+
+    } catch (e) {
+      // print('Error directly updating category for $screenshotPath: $e'); // Keep error logging? Maybe not for production. Removed for now.
+      throw Exception('Failed to update category for screenshot $screenshotId: $e');
     }
-    // Use copyWith to update the categoryId (handles null correctly)
-    final updatedScreenshot = originalScreenshot.copyWith(
-      categoryIdNullable: () => categoryId,
-    );
-    // Persist the change using updateScreenshot
-    return updateScreenshot(updatedScreenshot);
   }
 
 }

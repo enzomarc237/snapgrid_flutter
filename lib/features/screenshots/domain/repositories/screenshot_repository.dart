@@ -38,9 +38,10 @@ abstract class ScreenshotRepository {
 
   /// Sets or unsets the category for a given screenshot.
   ///
-  /// [filePath] The path of the screenshot to update.
+  /// [screenshotId] The ID of the screenshot to update.
+  /// [screenshotPath] The file path of the screenshot (needed for direct file access).
   /// [categoryId] The ID of the category to assign, or null to remove from category.
-  Future<Screenshot> setScreenshotCategory(String filePath, String? categoryId);
+  Future<Screenshot> setScreenshotCategory(String screenshotId, String screenshotPath, String? categoryId);
 
   /// Gets all available tags across all screenshots
   Future<List<String>> getAllTags();
@@ -53,4 +54,5 @@ abstract class ScreenshotRepository {
 
   /// Gets screenshots filtered by category ID
   Future<List<Screenshot>> getScreenshotsByCategory(String categoryId);
+  Future<Screenshot?> getScreenshotById(String id); // Add new method
 }

@@ -383,17 +383,18 @@ class ScreenshotActions {
   ) async {
     try {
       final repository = _ref.read(screenshotRepositoryProvider);
-      final importedScreenshots = await repository.importScreenshots(paths);
+      // Get the currently selected category ID
+      final selectedCategoryId = _ref.read(selectedCategoryIdProvider);
+      // Pass the categoryId if one is selected
+      final importedScreenshots = await repository.importScreenshots(
+        paths,
+        categoryId: selectedCategoryId,
+      );
 
       // Refresh the list after importing (already done in importScreenshots)
       _ref.invalidate(
         screenshotsProvider,
-      ); // Not needed, invalidate is in repository impl
-
-      // Trigger analysis for each imported screenshot
-      // for (final screenshot in importedScreenshots) {
-      // analyzeScreenshot(screenshot, context); // Call analyze for each
-      // }
+      );
 
       // Show success message
       if (context.mounted && paths.isNotEmpty) {
@@ -690,6 +691,22 @@ class ScreenshotActions {
               ),
         );
       }
+    }
+  }
+
+  /// Assigns or unassigns a category to a screenshot using its ID and path.
+  Future<void> assignCategory(String screenshotId, String screenshotPath, String? categoryId) async {
+    // No context needed here usually, unless showing dialogs on error
+    try {
+      final repository = _ref.read(screenshotRepositoryProvider);
+      // Call the updated repository method
+      await repository.setScreenshotCategory(screenshotId, screenshotPath, categoryId);
+      // Invalidate the provider here, after the repository action is complete
+      _ref.invalidate(screenshotsProvider);
+    } catch (e) {
+      print('Error assigning category to $screenshotPath: $e');
+      // Optionally show an error dialog using context if passed or available globally
+      // For now, just print the error.
     }
   }
 

@@ -1,8 +1,15 @@
 import 'package:flutter/foundation.dart';
 
 /// Represents a screenshot with its metadata
+import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
+
+/// Represents a screenshot with its metadata
 @immutable
 class Screenshot {
+  /// A unique identifier for the screenshot
+  final String id;
+
   /// The filename of the screenshot
   final String fileName;
 
@@ -29,6 +36,7 @@ class Screenshot {
 
   /// Creates a Screenshot instance
   const Screenshot({
+    required this.id,
     required this.fileName,
     required this.filePath,
     required this.importDate,
@@ -36,12 +44,15 @@ class Screenshot {
     this.analysisResults,
     this.tags = const [],
     this.isFavorite = false,
-    this.categoryId, // Added categoryId
+    this.categoryId,
   });
 
   /// Creates a Screenshot from JSON data
   factory Screenshot.fromJson(Map<String, dynamic> json) {
+    // Handle missing 'id' for backward compatibility
+    final id = json['id'] as String? ?? const Uuid().v4();
     return Screenshot(
+      id: id, // Use existing or newly generated ID
       fileName: json['fileName'] as String,
       filePath: json['filePath'] as String,
       importDate: DateTime.parse(json['importDate'] as String),
@@ -49,13 +60,14 @@ class Screenshot {
       analysisResults: json['analysisResults'] as Map<String, dynamic>?,
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
       isFavorite: json['isFavorite'] as bool? ?? false,
-      categoryId: json['categoryId'] as String?, // Added categoryId
+      categoryId: json['categoryId'] as String?,
     );
   }
 
   /// Converts the Screenshot to JSON
   Map<String, dynamic> toJson() {
     return {
+      'id': id, // Ensure ID is always included in JSON
       'fileName': fileName,
       'filePath': filePath,
       'importDate': importDate.toIso8601String(),
@@ -63,12 +75,13 @@ class Screenshot {
       'analysisResults': analysisResults,
       'tags': tags,
       'isFavorite': isFavorite,
-      'categoryId': categoryId, // Added categoryId
+      'categoryId': categoryId,
     };
   }
 
   /// Creates a copy of this Screenshot with the given fields replaced
   Screenshot copyWith({
+    String? id,
     String? fileName,
     String? filePath,
     DateTime? importDate,
@@ -76,11 +89,12 @@ class Screenshot {
     Map<String, dynamic>? analysisResults,
     List<String>? tags,
     bool? isFavorite,
-    String? categoryId, // Added categoryId
+    String? categoryId,
     ValueGetter<String?>? categoryIdNullable, // Helper for explicit null setting
   }) {
     final effectiveCategoryId = categoryIdNullable != null ? categoryIdNullable() : (categoryId ?? this.categoryId);
     return Screenshot(
+      id: id ?? this.id,
       fileName: fileName ?? this.fileName,
       filePath: filePath ?? this.filePath,
       importDate: importDate ?? this.importDate,
@@ -88,7 +102,7 @@ class Screenshot {
       analysisResults: analysisResults ?? this.analysisResults,
       tags: tags ?? this.tags,
       isFavorite: isFavorite ?? this.isFavorite,
-      categoryId: effectiveCategoryId, // Use calculated categoryId
+      categoryId: effectiveCategoryId,
     );
   }
 

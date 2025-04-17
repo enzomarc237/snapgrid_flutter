@@ -32,6 +32,10 @@
 - Implement multi-selection for screenshots
 - Add export functionality for analysis results
 
+### 2.4 TODO: Direct Category Assignment on Import
+- When importing screenshots (via menu, button, or drag-and-drop) while a category is selected, automatically assign the selected category to the new screenshots.
+- Complete the AI suggestion assignment flow so that confirmed screenshots are assigned to the chosen category.
+
 ## 3. Technical Improvements
 
 ### 3.1 Testing
