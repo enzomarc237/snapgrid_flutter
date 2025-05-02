@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_providers.dart';
 import 'core/utils/platform_menu_bar.dart';
 import 'core/utils/platform_utils.dart';
 import 'core/utils/window_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
-
-import 'features/categories/presentation/providers/category_providers.dart'; // Import category providers
+import 'features/categories/presentation/providers/category_providers.dart';
 import 'features/screenshots/presentation/screens/main_screen.dart';
 
 /// Global navigator key for accessing navigator from anywhere
@@ -18,19 +17,19 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize SharedPreferences
+  final sharedPreferences = await SharedPreferences.getInstance();
+
   // Configure macOS window if running on macOS
   if (PlatformUtils.isMacOS) {
     await WindowUtils.configureMacosWindow();
   }
 
-  // Initialize SharedPreferences
-  final prefs = await SharedPreferences.getInstance();
-
   runApp(
     ProviderScope(
       overrides: [
-        // Override the SharedPreferences provider with the initialized instance
-        sharedPreferencesProvider.overrideWithValue(prefs),
+        // Override the sharedPreferencesProvider with the actual instance
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       ],
       child: const SnapGridApp(),
     ),
@@ -59,12 +58,17 @@ class SnapGridApp extends ConsumerWidget {
           child: child!,
         );
       },
-      title: 'CaptureMagic',
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
+      title: 'SnapGrid',
+      theme: AppTheme.lightTheme(
+        accentColor: themeSettings.accentColor,
+        highContrast: themeSettings.highContrast,
+      ),
+      darkTheme: AppTheme.darkTheme(
+        accentColor: themeSettings.accentColor,
+        highContrast: themeSettings.highContrast,
+      ),
       themeMode: themeSettings.themeMode,
       debugShowCheckedModeBanner: false,
-
       home: const MainScreen(),
     );
   }

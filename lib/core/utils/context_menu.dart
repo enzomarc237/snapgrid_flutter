@@ -49,7 +49,10 @@ class MacosContextMenuItem extends StatelessWidget {
     super.key,
     required this.title,
     required this.onClick,
+    this.separator = false,
   });
+
+  final bool separator;
 
   @override
   Widget build(BuildContext context) {

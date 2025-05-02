@@ -12,6 +12,7 @@ import '../../../../core/utils/keyboard_shortcuts.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../domain/models/screenshot.dart';
 import '../providers/screenshot_providers.dart';
+import '../widgets/custom_sidebar_item.dart';
 import '../widgets/screenshot_grid.dart';
 import 'screenshot_detail_screen.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
@@ -44,17 +45,23 @@ class SidebarSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final macosTheme = MacosTheme.of(context);
+    final brightness = macosTheme.brightness;
+    
+    // Use appropriate color based on theme brightness
+    final Color textColor = brightness == Brightness.dark
+        ? CupertinoColors.white.withOpacity(0.65)
+        : CupertinoColors.black.withOpacity(0.65);
+    
     return Padding(
       // Increase vertical padding for section titles
       padding: const EdgeInsets.fromLTRB(12.0, 20.0, 12.0, 8.0),
       child: Text(
         title.toUpperCase(),
-        style: MacosTheme.of(context).typography.body.copyWith(
+        style: macosTheme.typography.body.copyWith(
           fontSize: 11,
           fontWeight: FontWeight.w500,
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurface.withOpacity(0.65), // Subtle color
+          color: textColor, // Adaptive color for dark/light mode
         ),
       ),
     );
@@ -113,114 +120,41 @@ class MainScreen extends ConsumerWidget {
                   children: [
                     // --- PAGES Section ---
                     const SidebarSectionTitle('Pages'),
-                    // Replace SidebarItems with individual MacosListTile for fixed items
-                    // Apply custom styling for selected item
-                    () {
-                      final isSelected = sidebarIndex == 0;
-                      // Use secondaryLabelColor for non-selected items for better contrast
-                      final color =
-                          isSelected
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Theme.of(context).colorScheme.onSurface;
-                      return Container(
-                        // Increase vertical margin between items
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(
-                            6,
-                          ), // Rounded corners
-                        ),
-                        child: MacosListTile(
-                          leading: MacosIcon(
-                            CupertinoIcons.photo_on_rectangle,
-                            color: color, // Set icon color
-                          ),
-                          title: Text(
-                            'Captures d\'écran', // Translated to French
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w600,
-                            ), // Set text color
-                          ),
-                          onClick: () {
-                            ref
-                                .read(mainNavigationProvider.notifier)
-                                .setPageIndex(0);
-                            ref
-                                .read(selectedCategoryIdProvider.notifier)
-                                .state = null;
-                            ref
-                                .read(selectedScreenshotProvider.notifier)
-                                .state = null; // Clear screenshot selection
-                          },
-                        ),
-                      );
-                    }(), // Immediately invoke the closure
-                    () {
-                      final isSelected = sidebarIndex == 1;
-                      // Use secondaryLabelColor for non-selected items for better contrast
-                      final color =
-                          isSelected
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Theme.of(context).colorScheme.onSurface;
-                      return Container(
-                        // Increase vertical margin between items
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(
-                            6,
-                          ), // Rounded corners
-                        ),
-                        child: MacosListTile(
-                          leading: MacosIcon(
-                            CupertinoIcons.settings,
-                            color: color, // Set icon color
-                          ),
-                          title: Text(
-                            'Paramètres', // Translated to French
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w600,
-                            ), // Set text color
-                          ),
-                          onClick: () {
-                            ref
-                                .read(mainNavigationProvider.notifier)
-                                .setPageIndex(1);
-                            ref
-                                .read(selectedCategoryIdProvider.notifier)
-                                .state = null; // Clear category selection
-                            ref
-                                .read(selectedScreenshotProvider.notifier)
-                                .state = null; // Clear screenshot selection
-                          },
-                        ),
-                      );
-                    }(), // Immediately invoke the closure
+                    // Screenshots item
+                    GenericSidebarItem(
+                      title: 'Captures d\'écran',
+                      icon: CupertinoIcons.photo_on_rectangle,
+                      isSelected: sidebarIndex == 0 && currentSelectedCategoryId == null,
+                      onTap: () {
+                        ref.read(mainNavigationProvider.notifier).setPageIndex(0);
+                        ref.read(selectedCategoryIdProvider.notifier).state = null;
+                        ref.read(selectedScreenshotProvider.notifier).state = null;
+                      },
+                    ),
+                    // Settings item
+                    GenericSidebarItem(
+                      title: 'Paramètres',
+                      icon: CupertinoIcons.settings,
+                      isSelected: sidebarIndex == 1,
+                      onTap: () {
+                        ref.read(mainNavigationProvider.notifier).setPageIndex(1);
+                        ref.read(selectedCategoryIdProvider.notifier).state = null;
+                        ref.read(selectedScreenshotProvider.notifier).state = null;
+                      },
+                    ),
                     // --- CATEGORIES Section ---
                     const SidebarSectionTitle('Catégories'),
+                    // Add "All Categories" entry first
+                    GenericSidebarItem(
+                      title: 'Toutes les catégories',
+                      icon: CupertinoIcons.square_grid_2x2,
+                      isSelected: sidebarIndex == 0 && currentSelectedCategoryId == null,
+                      onTap: () {
+                        ref.read(mainNavigationProvider.notifier).setPageIndex(0);
+                        ref.read(selectedCategoryIdProvider.notifier).state = null;
+                        ref.read(selectedScreenshotProvider.notifier).state = null;
+                      },
+                    ),
                     Expanded(
                       // Make the category list scrollable and take remaining space
                       child: categoriesAsync.when(
@@ -236,10 +170,16 @@ class MainScreen extends ConsumerWidget {
                                   index + 2; // Offset by 2
                               final isSelected =
                                   sidebarIndex == categorySidebarIndex;
-                              final color =
-                                  isSelected
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurface;
+                              // Use MacosTheme for proper macOS styling and dark mode adaptation
+                              final macosTheme = MacosTheme.of(context);
+                              final brightness = macosTheme.brightness;
+                              
+                              // Determine text and icon color based on selection and theme brightness
+                              final Color color = isSelected
+                                  ? CupertinoColors.white
+                                  : brightness == Brightness.dark
+                                      ? CupertinoColors.white
+                                      : CupertinoColors.black;
                               return DragTarget<String>(
                                 builder: (
                                   BuildContext context,
@@ -259,9 +199,7 @@ class MainScreen extends ConsumerWidget {
                                     decoration: BoxDecoration(
                                       color:
                                           isSelected
-                                              ? Theme.of(
-                                                context,
-                                              ).colorScheme.primary
+                                              ? macosTheme.primaryColor
                                               : Colors.transparent,
                                       borderRadius: BorderRadius.circular(
                                         6,
@@ -367,12 +305,16 @@ class MainScreen extends ConsumerWidget {
                         // Style the bottom button similarly to non-selected items
                         leading: MacosIcon(
                           CupertinoIcons.add_circled,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: MacosTheme.of(context).brightness == Brightness.dark
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
                         ),
                         title: Text(
                           'Gérer Catégories',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: MacosTheme.of(context).brightness == Brightness.dark
+                                ? CupertinoColors.white
+                                : CupertinoColors.black,
                           ),
                         ),
                         onClick: () {

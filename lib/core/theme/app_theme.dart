@@ -13,7 +13,7 @@ class AppTheme {
     final baseTheme = MacosThemeData.light();
 
     return baseTheme.copyWith(
-      primaryColor: accentColor,
+      primaryColor: Colors.black,
       dividerColor:
           highContrast ? const Color(0xFF8E8E93) : baseTheme.dividerColor,
     );

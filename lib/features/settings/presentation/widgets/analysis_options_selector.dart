@@ -179,6 +179,15 @@ class AnalysisOptionsSelector extends ConsumerWidget {
     bool value,
     void Function(bool) onChanged,
   ) {
+    // Use MacosTheme for proper macOS styling and dark mode adaptation
+    final macosTheme = MacosTheme.of(context);
+    final brightness = macosTheme.brightness;
+    
+    // Determine text color based on theme brightness
+    final Color textColor = brightness == Brightness.dark
+        ? CupertinoColors.white
+        : CupertinoColors.black;
+    
     return SizedBox(
       width: 220,
       child: Row(
@@ -187,7 +196,11 @@ class AnalysisOptionsSelector extends ConsumerWidget {
             value: value,
             onChanged: (newValue) => onChanged(newValue),
           ),
-          Text(label),
+          const SizedBox(width: 4), // Add a small gap between checkbox and text
+          Text(
+            label,
+            style: TextStyle(color: textColor),
+          ),
         ],
       ),
     );
