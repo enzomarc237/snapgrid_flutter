@@ -6,10 +6,10 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../core/widgets/themed_icon.dart';
 import '../../../../core/widgets/themed_progress_circle.dart';
-import '../../../../features/settings/presentation/providers/settings_providers.dart';
+
 import 'package:path/path.dart';
 
-import '../../../categories/presentation/providers/category_providers.dart'; // Needed for selectedCategoryIdProvider import? No, it's in main_screen.dart
+ // Needed for selectedCategoryIdProvider import? No, it's in main_screen.dart
 import '../../domain/models/screenshot.dart';
 import '../../domain/repositories/screenshot_repository.dart';
 import '../../data/repositories/screenshot_repository_impl.dart';
@@ -269,14 +269,10 @@ class ScreenshotActions {
       );
 
       if (result != null && result.files.isNotEmpty) {
-        final paths =
-            result.files
-                .where((file) => file.path != null)
-                .map((file) => file.path!)
-                .toList();
+        
 
         if (context.mounted) {
-          await importDroppedFiles(paths, context);
+          await importDroppedFiles(result.files.where((file) => file.path != null).map((file) => file.path!).toList(), context);
         }
       }
     } catch (e) {
@@ -392,9 +388,7 @@ class ScreenshotActions {
       );
 
       // Refresh the list after importing (already done in importScreenshots)
-      _ref.invalidate(
-        screenshotsProvider,
-      );
+      _ref.invalidate(screenshotsProvider);
 
       // Show success message
       if (context.mounted && paths.isNotEmpty) {
@@ -695,12 +689,20 @@ class ScreenshotActions {
   }
 
   /// Assigns or unassigns a category to a screenshot using its ID and path.
-  Future<void> assignCategory(String screenshotId, String screenshotPath, String? categoryId) async {
+  Future<void> assignCategory(
+    String screenshotId,
+    String screenshotPath,
+    String? categoryId,
+  ) async {
     // No context needed here usually, unless showing dialogs on error
     try {
       final repository = _ref.read(screenshotRepositoryProvider);
       // Call the updated repository method
-      await repository.setScreenshotCategory(screenshotId, screenshotPath, categoryId);
+      await repository.setScreenshotCategory(
+        screenshotId,
+        screenshotPath,
+        categoryId,
+      );
       // Invalidate the provider here, after the repository action is complete
       _ref.invalidate(screenshotsProvider);
     } catch (e) {

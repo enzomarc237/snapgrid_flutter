@@ -1,25 +1,19 @@
-import 'dart:async'; // Import for Completer
+// Import for Completer
 import 'dart:convert'; // Import for jsonDecode
-import 'dart:io';
-import 'dart:ui' as ui; // Needed for ui.Image
+// Needed for ui.Image
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'
-    show HardwareKeyboard, LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:path/path.dart';
 
 import '../../../../core/utils/keyboard_shortcuts.dart';
-import '../../../../core/widgets/themed_icon.dart';
-import '../../../../core/widgets/themed_progress_circle.dart'; // For placeholder
+// For placeholder
 import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../domain/models/screenshot.dart';
 import '../providers/screenshot_providers.dart';
 import '../widgets/screenshot_grid.dart';
 import 'screenshot_detail_screen.dart';
-import '../../../categories/domain/models/category.dart';
 import '../../../categories/presentation/providers/category_providers.dart';
 import '../../../categories/presentation/screens/manage_categories_screen.dart';
 
@@ -58,10 +52,9 @@ class SidebarSectionTitle extends StatelessWidget {
         style: MacosTheme.of(context).typography.body.copyWith(
           fontSize: 11,
           fontWeight: FontWeight.w500,
-          color:
-              MacosTheme.of(context).brightness == Brightness.dark
-                  ? MacosColors.systemGrayColor
-                  : MacosColors.secondaryLabelColor, // Subtle color
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withOpacity(0.65), // Subtle color
         ),
       ),
     );
@@ -113,265 +106,287 @@ class MainScreen extends ConsumerWidget {
             minWidth: 200,
             top: const SizedBox.shrink(), // Keep top empty
             builder: (context, scrollController) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- PAGES Section ---
-                  const SidebarSectionTitle('Pages'),
-                  // Replace SidebarItems with individual MacosListTile for fixed items
-                  // Apply custom styling for selected item
-                  () {
-                    final isSelected = sidebarIndex == 0;
-                    // Use secondaryLabelColor for non-selected items for better contrast
-                    final color =
-                        isSelected
-                            ? MacosColors.white
-                            : MacosColors.secondaryLabelColor;
-                    return Container(
-                      // Increase vertical margin between items
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color:
-                            isSelected
-                                ? MacosTheme.of(context).primaryColor
-                                : null,
-                        borderRadius: BorderRadius.circular(
-                          6,
-                        ), // Rounded corners
-                      ),
-                      child: MacosListTile(
-                        leading: MacosIcon(
-                          CupertinoIcons.photo_on_rectangle,
-                          color: color, // Set icon color
+              return Container(
+                // color: Theme.of(context).colorScheme.surface,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- PAGES Section ---
+                    const SidebarSectionTitle('Pages'),
+                    // Replace SidebarItems with individual MacosListTile for fixed items
+                    // Apply custom styling for selected item
+                    () {
+                      final isSelected = sidebarIndex == 0;
+                      // Use secondaryLabelColor for non-selected items for better contrast
+                      final color =
+                          isSelected
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurface;
+                      return Container(
+                        // Increase vertical margin between items
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        title: Text(
-                          'Screenshots', // Represents "All"
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                          ), // Set text color
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                        onClick: () {
-                          ref
-                              .read(mainNavigationProvider.notifier)
-                              .setPageIndex(0);
-                          ref.read(selectedCategoryIdProvider.notifier).state =
-                              null;
-                          ref.read(selectedScreenshotProvider.notifier).state =
-                              null; // Clear screenshot selection
-                        },
-                      ),
-                    );
-                  }(), // Immediately invoke the closure
-                  () {
-                    final isSelected = sidebarIndex == 1;
-                    // Use secondaryLabelColor for non-selected items for better contrast
-                    final color =
-                        isSelected
-                            ? MacosColors.white
-                            : MacosColors.secondaryLabelColor;
-                    return Container(
-                      // Increase vertical margin between items
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color:
-                            isSelected
-                                ? MacosTheme.of(context).primaryColor
-                                : null,
-                        borderRadius: BorderRadius.circular(
-                          6,
-                        ), // Rounded corners
-                      ),
-                      child: MacosListTile(
-                        leading: MacosIcon(
-                          CupertinoIcons.settings,
-                          color: color, // Set icon color
+                        decoration: BoxDecoration(
+                          color:
+                              isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.transparent,
+                          borderRadius: BorderRadius.circular(
+                            6,
+                          ), // Rounded corners
                         ),
-                        title: Text(
-                          'Settings',
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                          ), // Set text color
-                        ),
-                        onClick: () {
-                          ref
-                              .read(mainNavigationProvider.notifier)
-                              .setPageIndex(1);
-                          ref.read(selectedCategoryIdProvider.notifier).state =
-                              null; // Clear category selection
-                          ref.read(selectedScreenshotProvider.notifier).state =
-                              null; // Clear screenshot selection
-                        },
-                      ),
-                    );
-                  }(), // Immediately invoke the closure
-                  // --- CATEGORIES Section ---
-                  const SidebarSectionTitle('Catégories'),
-                  Expanded(
-                    // Make the category list scrollable and take remaining space
-                    child: categoriesAsync.when(
-                      data: (categoryList) {
-                        // Combine "All" (handled above) and specific categories
-                        return ListView.builder(
-                          controller:
-                              scrollController, // Use the provided controller
-                          itemCount: categoryList.length,
-                          itemBuilder: (context, index) {
-                            final category = categoryList[index];
-                            final categorySidebarIndex =
-                                index + 2; // Offset by 2
-                            final isSelected =
-                                sidebarIndex == categorySidebarIndex;
-                            final color =
-                                isSelected
-                                    ? MacosColors.white
-                                    // Use secondaryLabelColor for non-selected items for better contrast
-                                    : MacosColors.secondaryLabelColor;
-                            return DragTarget<String>(
-                              builder: (
-                                BuildContext context,
-                                List<dynamic> accepted,
-                                List<dynamic> rejected,
-                              ) {
-                                return Container(
-                                  // Increase vertical margin between items
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isSelected
-                                            ? MacosTheme.of(
-                                              context,
-                                            ).primaryColor
-                                            : null,
-                                    borderRadius: BorderRadius.circular(
-                                      6,
-                                    ), // Rounded corners
-                                  ),
-                                  child: MacosListTile(
-                                    leading: MacosIcon(
-                                      category.icon,
-                                      color: color, // Set icon color
-                                    ),
-                                    title: Text(
-                                      category.title,
-                                      style: TextStyle(
-                                        color: color,
-                                        fontWeight: FontWeight.w600,
-                                      ), // Set text color
-                                    ),
-                                    // Use onClick instead of onPressed for MacosListTile
-                                    onClick: () {
-                                      ref
-                                          .read(mainNavigationProvider.notifier)
-                                          .setPageIndex(
-                                            0,
-                                          ); // Always show screenshot view
-                                      ref
-                                          .read(
-                                            selectedCategoryIdProvider.notifier,
-                                          )
-                                          .state = category.id;
-                                      ref
-                                              .read(
-                                                selectedScreenshotProvider
-                                                    .notifier,
-                                              )
-                                              .state =
-                                          null; // Clear screenshot selection
-                                    },
-                                  ),
-                                );
-                              },
-                              onAccept: (String jsonData) { // Accept JSON string
-                                try {
-                                  final data = jsonDecode(jsonData) as Map<String, dynamic>;
-                                  final screenshotId = data['id'] as String?;
-                                  final screenshotPath = data['filePath'] as String?; // Get filePath
-
-                                  if (screenshotId != null && screenshotPath != null) {
-                                    // print('Assigning category ${category.id} to screenshot $screenshotId ($screenshotPath)'); // Removed log
-                                    // Assign the category using the ID and Path
-                                    ref
-                                        .read(screenshotActionsProvider)
-                                        .assignCategory(
-                                          screenshotId, // Pass the ID
-                                          screenshotPath, // Pass the Path
-                                          category.id,
-                                        );
-                                  } else {
-                                    print('Error: Dragged data missing id or filePath.');
-                                  }
-                                } catch (e) {
-                                  print('Error decoding dragged data: $e');
-                                }
-                              },
-                              onWillAccept: (String? screenshotPath) {
-                                // Logic to determine if the category will accept the dragged screenshot
-                                return true; // Always accept for now
-                              },
-                            );
+                        child: MacosListTile(
+                          leading: MacosIcon(
+                            CupertinoIcons.photo_on_rectangle,
+                            color: color, // Set icon color
+                          ),
+                          title: Text(
+                            'Captures d\'écran', // Translated to French
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                            ), // Set text color
+                          ),
+                          onClick: () {
+                            ref
+                                .read(mainNavigationProvider.notifier)
+                                .setPageIndex(0);
+                            ref
+                                .read(selectedCategoryIdProvider.notifier)
+                                .state = null;
+                            ref
+                                .read(selectedScreenshotProvider.notifier)
+                                .state = null; // Clear screenshot selection
                           },
-                        );
-                      },
-                      loading: () => const Center(child: ProgressCircle()),
-                      error:
-                          (error, stack) => Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text('Erreur cat: $error'),
-                          ),
-                    ),
-                  ),
-
-                  // --- Manage Categories Button ---
-                  const Spacer(), // Pushes the button to the bottom
-                  Padding(
-                    // Reduce padding around the bottom button
-                    padding: const EdgeInsets.fromLTRB(
-                      8.0,
-                      8.0,
-                      8.0,
-                      16.0,
-                    ), // Less top/horizontal, keep bottom
-                    // Use MacosListTile for consistency
-                    child: MacosListTile(
-                      // Style the bottom button similarly to non-selected items
-                      leading: const MacosIcon(
-                        CupertinoIcons.add_circled,
-                        color: MacosColors.secondaryLabelColor,
-                      ),
-                      title: const Text(
-                        'Gérer Catégories',
-                        style: TextStyle(
-                          color: MacosColors.secondaryLabelColor,
                         ),
-                      ),
-                      onClick: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder:
-                                (context) => const ManageCategoriesScreen(),
+                      );
+                    }(), // Immediately invoke the closure
+                    () {
+                      final isSelected = sidebarIndex == 1;
+                      // Use secondaryLabelColor for non-selected items for better contrast
+                      final color =
+                          isSelected
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurface;
+                      return Container(
+                        // Increase vertical margin between items
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.transparent,
+                          borderRadius: BorderRadius.circular(
+                            6,
+                          ), // Rounded corners
+                        ),
+                        child: MacosListTile(
+                          leading: MacosIcon(
+                            CupertinoIcons.settings,
+                            color: color, // Set icon color
                           ),
-                        );
-                      },
+                          title: Text(
+                            'Paramètres', // Translated to French
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                            ), // Set text color
+                          ),
+                          onClick: () {
+                            ref
+                                .read(mainNavigationProvider.notifier)
+                                .setPageIndex(1);
+                            ref
+                                .read(selectedCategoryIdProvider.notifier)
+                                .state = null; // Clear category selection
+                            ref
+                                .read(selectedScreenshotProvider.notifier)
+                                .state = null; // Clear screenshot selection
+                          },
+                        ),
+                      );
+                    }(), // Immediately invoke the closure
+                    // --- CATEGORIES Section ---
+                    const SidebarSectionTitle('Catégories'),
+                    Expanded(
+                      // Make the category list scrollable and take remaining space
+                      child: categoriesAsync.when(
+                        data: (categoryList) {
+                          // Combine "All" (handled above) and specific categories
+                          return ListView.builder(
+                            controller:
+                                scrollController, // Use the provided controller
+                            itemCount: categoryList.length,
+                            itemBuilder: (context, index) {
+                              final category = categoryList[index];
+                              final categorySidebarIndex =
+                                  index + 2; // Offset by 2
+                              final isSelected =
+                                  sidebarIndex == categorySidebarIndex;
+                              final color =
+                                  isSelected
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : Theme.of(context).colorScheme.onSurface;
+                              return DragTarget<String>(
+                                builder: (
+                                  BuildContext context,
+                                  List<dynamic> accepted,
+                                  List<dynamic> rejected,
+                                ) {
+                                  return Container(
+                                    // Increase vertical margin between items
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isSelected
+                                              ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                              : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(
+                                        6,
+                                      ), // Rounded corners
+                                    ),
+                                    child: MacosListTile(
+                                      leading: MacosIcon(
+                                        category.icon,
+                                        color: color, // Set icon color
+                                      ),
+                                      title: Text(
+                                        category.title,
+                                        style: TextStyle(
+                                          color: color,
+                                          fontWeight: FontWeight.w600,
+                                        ), // Set text color
+                                      ),
+                                      // Use onClick instead of onPressed for MacosListTile
+                                      onClick: () {
+                                        ref
+                                            .read(
+                                              mainNavigationProvider.notifier,
+                                            )
+                                            .setPageIndex(
+                                              0,
+                                            ); // Always show screenshot view
+                                        ref
+                                            .read(
+                                              selectedCategoryIdProvider
+                                                  .notifier,
+                                            )
+                                            .state = category.id;
+                                        ref
+                                                .read(
+                                                  selectedScreenshotProvider
+                                                      .notifier,
+                                                )
+                                                .state =
+                                            null; // Clear screenshot selection
+                                      },
+                                    ),
+                                  );
+                                },
+                                onAccept: (String jsonData) {
+                                  // Accept JSON string
+                                  try {
+                                    final data =
+                                        jsonDecode(jsonData)
+                                            as Map<String, dynamic>;
+                                    final screenshotId = data['id'] as String?;
+                                    final screenshotPath =
+                                        data['filePath']
+                                            as String?; // Get filePath
+
+                                    if (screenshotId != null &&
+                                        screenshotPath != null) {
+                                      ref
+                                          .read(screenshotActionsProvider)
+                                          .assignCategory(
+                                            screenshotId, // Pass the ID
+                                            screenshotPath, // Pass the Path
+                                            category.id,
+                                          );
+                                    } else {
+                                      print(
+                                        'Erreur: Données glissées manquantes id ou filePath.',
+                                      );
+                                    }
+                                  } catch (e) {
+                                    print(
+                                      'Erreur de décodage des données glissées: $e',
+                                    );
+                                  }
+                                },
+                                onWillAccept: (String? screenshotPath) {
+                                  return true; // Toujours accepter pour l'instant
+                                },
+                              );
+                            },
+                          );
+                        },
+                        loading: () => const Center(child: ProgressCircle()),
+                        error:
+                            (error, stack) => Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text('Erreur catégories: $error'),
+                            ),
+                      ),
                     ),
-                  ),
-                ],
+
+                    // --- Manage Categories Button ---
+                    const Spacer(), // Pushes the button to the bottom
+                    Padding(
+                      // Reduce padding around the bottom button
+                      padding: const EdgeInsets.fromLTRB(
+                        8.0,
+                        8.0,
+                        8.0,
+                        16.0,
+                      ), // Less top/horizontal, keep bottom
+                      // Use MacosListTile for consistency
+                      child: MacosListTile(
+                        // Style the bottom button similarly to non-selected items
+                        leading: MacosIcon(
+                          CupertinoIcons.add_circled,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        title: Text(
+                          'Gérer Catégories',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        onClick: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => const ManageCategoriesScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -405,7 +420,6 @@ class MainScreen extends ConsumerWidget {
                                 .read(selectedScreenshotProvider.notifier)
                                 .state = null;
                           });
-                          // ScreenshotGrid already uses categoryFilteredScreenshotsProvider
                           return const ScreenshotGrid();
                         }
 
@@ -417,12 +431,11 @@ class MainScreen extends ConsumerWidget {
                       error:
                           (error, stack) => Center(
                             child: Text(
-                              'Error loading screenshot details: $error',
+                              'Erreur de chargement des détails de capture d\'écran: $error',
                             ),
                           ),
                     );
                   } else {
-                    // ScreenshotGrid already uses categoryFilteredScreenshotsProvider
                     return const ScreenshotGrid();
                   }
                 },

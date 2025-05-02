@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart'; // Added
+import 'package:flutter/services.dart'; // For RawKeyEvent, RawKeyDownEvent
+import 'dart:io'; // For Platform.isMacOS
 
 import '../../../../core/widgets/themed_icon.dart';
 import '../../../categories/presentation/providers/category_providers.dart'; // Added for category info
@@ -29,44 +31,85 @@ class ScreenshotGrid extends ConsumerStatefulWidget {
 class _ScreenshotGridState extends ConsumerState<ScreenshotGrid> {
   bool _isDragging = false;
 
+  // Focus node for keyboard events
+  late final FocusNode _keyboardListenerFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _keyboardListenerFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _keyboardListenerFocusNode.dispose();
+    super.dispose();
+  }
+
+  // Handles keyboard events for paste
+  void _handleKeyEvent(RawKeyEvent event) async {
+    // Only handle key down events
+    if (event is! RawKeyDownEvent) return;
+
+    final isMacOS = Platform.isMacOS;
+    final isPaste = (isMacOS && event.isMetaPressed && event.logicalKey.keyLabel.toLowerCase() == 'v') ||
+                    (!isMacOS && event.isControlPressed && event.logicalKey.keyLabel.toLowerCase() == 'v');
+
+    if (isPaste) {
+      // Clipboard image paste logic
+      // Requires pasteboard or similar plugin for image support on desktop
+      // Example using pasteboard (add to pubspec.yaml: pasteboard: ^0.2.0)
+      try {
+        // ignore: import_of_legacy_library_into_null_safe
+        // import 'package:pasteboard/pasteboard.dart';
+        // final imageBytes = await Pasteboard.image;
+        // if (imageBytes != null) {
+        //   await ref.read(screenshotActionsProvider).importClipboardImage(imageBytes, context);
+        // }
+        // TODO: Implement actual clipboard image extraction using pasteboard or similar plugin.
+      } catch (e) {
+        // Optionally show error to user
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch the final filtered provider which includes category filtering
     final finalScreenshotsAsync = ref.watch(categoryFilteredScreenshotsProvider);
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider); // Needed for empty state context
 
-    return DropTarget(
-      onDragDone: (details) async {
-        // Handle the dropped files
-        if (details.files.isNotEmpty) {
-          final paths = details.files.map((file) => file.path).toList();
-          await ref
-              .read(screenshotActionsProvider)
-              .importDroppedFiles(paths, context);
-        }
-      },
-      onDragEntered: (_) => setState(() => _isDragging = true),
-      onDragExited: (_) => setState(() => _isDragging = false),
-      child: Stack(
-        children: [
-          Column(
-            children: [
-              // Search bar
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: MacosSearchField(
-                  focusNode: ref.watch(searchFocusNodeProvider),
-                  placeholder:
-                      'Search screenshots by content, elements, colors... (⌘F)',
-                  onChanged: (value) {
-                    ref.read(searchQueryProvider.notifier).state = value;
-                  },
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 12,
-                  ),
-                ),
+    return RawKeyboardListener(
+      autofocus: true,
+      focusNode: _keyboardListenerFocusNode,
+      onKey: _handleKeyEvent,
+      child: DropTarget(
+        onDragDone: (details) async {
+          // Handle the dropped files
+          if (details.files.isNotEmpty) {
+            final paths = details.files.map((file) => file.path).toList();
+            await ref
+                .read(screenshotActionsProvider)
+                .importDroppedFiles(paths, context);
+          }
+        },
+        onDragEntered: (_) => setState(() => _isDragging = true),
+        onDragExited: (_) => setState(() => _isDragging = false),
+        child: Stack(
+          children: [
+            // Search bar
+            MacosSearchField(
+              focusNode: ref.watch(searchFocusNodeProvider),
+              placeholder:
+                  'Search screenshots by content, elements, colors... (⌘F)',
+              onChanged: (value) {
+                ref.read(searchQueryProvider.notifier).state = value;
+              },
+              padding: const EdgeInsets.symmetric(
+                vertical: 8,
+                horizontal: 12,
               ),
+            ),
 
               // Tag filter bar
               const TagFilterBar(),
@@ -75,8 +118,8 @@ class _ScreenshotGridState extends ConsumerState<ScreenshotGrid> {
               const SelectionToolbar(),
 
               // Screenshots grid
-              Expanded(
-                // Use the final provider here
+              Positioned.fill(
+                top: 96, // Adjusted to account for the search bar height
                 child: finalScreenshotsAsync.when(
                   data: (screenshots) {
                     if (screenshots.isEmpty) {
@@ -122,35 +165,34 @@ class _ScreenshotGridState extends ConsumerState<ScreenshotGrid> {
                   ),
                 ),
               ),
-            ],
-          ),
-          // Overlay when dragging
-          if (_isDragging)
-            Positioned.fill(
-              child: Container(
-                color: MacosTheme.of(context).canvasColor.withAlpha(230),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const ThemedIcon(
-                        CupertinoIcons.arrow_down_circle,
-                        size: 64,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Drop screenshots here',
-                        style: MacosTheme.of(context).typography.title1,
-                      ),
-                    ],
+            // Overlay when dragging
+            if (_isDragging)
+              Positioned.fill(
+                child: Container(
+                  color: MacosTheme.of(context).canvasColor.withAlpha(230),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const ThemedIcon(
+                          CupertinoIcons.arrow_down_circle,
+                          size: 64,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Drop screenshots here',
+                          style: MacosTheme.of(context).typography.title1,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
-  }
+  } // build
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref, String? selectedCategoryId) {
     // Check filters to provide context for the empty state

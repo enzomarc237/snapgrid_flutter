@@ -1,4 +1,3 @@
-
 import '../models/screenshot.dart';
 
 /// Repository interface for screenshot operations
@@ -10,10 +9,13 @@ abstract class ScreenshotRepository {
   Future<Screenshot?> getScreenshotByPath(String path);
 
   /// Imports a screenshot from the given source path
-  Future<Screenshot> importScreenshot(String sourcePath);
+  Future<Screenshot> importScreenshot(String sourcePath, {String? categoryId});
 
   /// Imports multiple screenshots from the given source paths
-  Future<List<Screenshot>> importScreenshots(List<String> sourcePaths);
+  Future<List<Screenshot>> importScreenshots(
+    List<String> sourcePaths, {
+    String? categoryId,
+  });
 
   /// Batch import screenshots (entity version)
   Future<void> importScreenshotEntities(List<Screenshot> screenshots);
@@ -41,7 +43,11 @@ abstract class ScreenshotRepository {
   /// [screenshotId] The ID of the screenshot to update.
   /// [screenshotPath] The file path of the screenshot (needed for direct file access).
   /// [categoryId] The ID of the category to assign, or null to remove from category.
-  Future<Screenshot> setScreenshotCategory(String screenshotId, String screenshotPath, String? categoryId);
+  Future<Screenshot> setScreenshotCategory(
+    String screenshotId,
+    String screenshotPath,
+    String? categoryId,
+  );
 
   /// Gets all available tags across all screenshots
   Future<List<String>> getAllTags();

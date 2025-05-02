@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-@visibleForTesting
 class ScreenshotMetadata {
   final String fileName;
   final String filePath;
@@ -38,7 +37,6 @@ class ScreenshotMetadata {
     };
   }
   
-  @visibleForTesting
   static Future<ScreenshotMetadata?> fromFile(String metadataPath) async {
     try {
       final file = File(metadataPath);

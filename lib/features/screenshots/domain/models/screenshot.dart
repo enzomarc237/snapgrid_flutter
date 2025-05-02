@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// Represents a screenshot with its metadata
-import 'package:flutter/foundation.dart';
+
 import 'package:uuid/uuid.dart';
 
 /// Represents a screenshot with its metadata

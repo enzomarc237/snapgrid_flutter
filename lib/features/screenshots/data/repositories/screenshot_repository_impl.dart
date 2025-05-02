@@ -20,10 +20,18 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
   ScreenshotRepositoryImpl({required this.ref}); // Updated constructor
 
   // Helper to get the path for the metadata JSON file within the metadata directory
-  Future<String> _getMetadataPath(String imagePath) async { // Make it async
-    final metadataDir = await _getAndEnsureDirectory('metadata'); // Get metadata dir
-    final fileNameWithoutExt = p.basenameWithoutExtension(imagePath); // Get filename without ext
-    return p.join(metadataDir.path, '$fileNameWithoutExt.json'); // Construct path in metadata dir
+  Future<String> _getMetadataPath(String imagePath) async {
+    // Make it async
+    final metadataDir = await _getAndEnsureDirectory(
+      'metadata',
+    ); // Get metadata dir
+    final fileNameWithoutExt = p.basenameWithoutExtension(
+      imagePath,
+    ); // Get filename without ext
+    return p.join(
+      metadataDir.path,
+      '$fileNameWithoutExt.json',
+    ); // Construct path in metadata dir
   }
 
   // Helper to get the directory path from the provider and ensure it exists
@@ -32,7 +40,9 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
     final directories = await ref.read(appDirectoriesProvider.future);
     final dirPath = directories[key];
     if (dirPath == null) {
-      throw Exception('Directory key "$key" not found in appDirectoriesProvider');
+      throw Exception(
+        'Directory key "$key" not found in appDirectoriesProvider',
+      );
     }
     final directory = Directory(dirPath);
     // Create the directory recursively if it doesn't exist
@@ -59,7 +69,6 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
       return [];
     }
 
-
     for (final entity in entities) {
       if (entity is File && p.extension(entity.path) == '.json') {
         try {
@@ -72,7 +81,9 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
           if (await imageFile.exists()) {
             screenshots.add(screenshot);
           } else {
-            print('Metadata found for non-existent image: ${entity.path}, skipping and deleting metadata.');
+            print(
+              'Metadata found for non-existent image: ${entity.path}, skipping and deleting metadata.',
+            );
             // Delete orphan metadata file
             await entity.delete();
           }
@@ -100,17 +111,21 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
         final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
         // Verify image exists before returning
         if (await File(imagePath).exists()) {
-           return Screenshot.fromJson(jsonMap);
+          return Screenshot.fromJson(jsonMap);
         } else {
-           print('Metadata found for non-existent image: $metadataPath, deleting metadata.');
-           await file.delete();
-           return null;
+          print(
+            'Metadata found for non-existent image: $metadataPath, deleting metadata.',
+          );
+          await file.delete();
+          return null;
         }
       } else {
         return null; // Metadata file doesn't exist
       }
     } catch (e) {
-      print('Error reading metadata for $imagePath (metadata path: $metadataPath): $e');
+      print(
+        'Error reading metadata for $imagePath (metadata path: $metadataPath): $e',
+      );
       return null;
     }
   }
@@ -136,7 +151,7 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
     return tags.toList()..sort(); // Return sorted list
   }
 
-   @override
+  @override
   Future<List<Screenshot>> getScreenshotsByTag(String tag) async {
     final allScreenshots = await getAllScreenshots(); // Read from files
     return allScreenshots.where((s) => s.tags.contains(tag)).toList();
@@ -148,7 +163,7 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
     return allScreenshots.where((s) => s.isFavorite).toList();
   }
 
-   @override
+  @override
   Future<List<Screenshot>> getScreenshotsByCategory(String categoryId) async {
     final allScreenshots = await getAllScreenshots(); // Read from files
     return allScreenshots.where((s) => s.categoryId == categoryId).toList();
@@ -157,20 +172,29 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
   // --- Write Operations ---
 
   @override
-  Future<Screenshot> importScreenshot(String sourcePath, {String? categoryId}) async {
+  Future<Screenshot> importScreenshot(
+    String sourcePath, {
+    String? categoryId,
+  }) async {
     // 1. Determine destination paths
     final imagesDir = await _getAndEnsureDirectory('images');
     final metadataDir = await _getAndEnsureDirectory('metadata');
     final fileName = p.basename(sourcePath);
     final destImagePath = p.join(imagesDir.path, fileName);
-    final destMetadataPath = p.join(metadataDir.path, '${p.withoutExtension(fileName)}.json');
+    final destMetadataPath = p.join(
+      metadataDir.path,
+      '${p.withoutExtension(fileName)}.json',
+    );
 
     // 2. Check if file already exists
-    if (await File(destImagePath).exists() || await File(destMetadataPath).exists()) {
-       print('Skipping import for "$fileName": File already exists.');
-       final existing = await getScreenshotByPath(destImagePath);
-       if (existing != null) return existing;
-       throw Exception('Inconsistent state: Image or metadata already exists for $fileName');
+    if (await File(destImagePath).exists() ||
+        await File(destMetadataPath).exists()) {
+      print('Skipping import for "$fileName": File already exists.');
+      final existing = await getScreenshotByPath(destImagePath);
+      if (existing != null) return existing;
+      throw Exception(
+        'Inconsistent state: Image or metadata already exists for $fileName',
+      );
     }
 
     // 3. Copy image file
@@ -202,17 +226,27 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
       return screenshot;
     } catch (e) {
       print('Error creating initial metadata for ${screenshot.filePath}: $e');
-      try { await File(destImagePath).delete(); } catch (_) {}
-      throw Exception('Failed to create metadata for ${screenshot.filePath}: $e');
+      try {
+        await File(destImagePath).delete();
+      } catch (_) {}
+      throw Exception(
+        'Failed to create metadata for ${screenshot.filePath}: $e',
+      );
     }
   }
 
   @override
-  Future<List<Screenshot>> importScreenshots(List<String> sourcePaths, {String? categoryId}) async {
+  Future<List<Screenshot>> importScreenshots(
+    List<String> sourcePaths, {
+    String? categoryId,
+  }) async {
     final List<Screenshot> successfullyImported = [];
     for (final sourcePath in sourcePaths) {
       try {
-        final importedScreenshot = await importScreenshot(sourcePath, categoryId: categoryId);
+        final importedScreenshot = await importScreenshot(
+          sourcePath,
+          categoryId: categoryId,
+        );
         successfullyImported.add(importedScreenshot);
       } catch (e) {
         print('Failed to import $sourcePath: $e');
@@ -220,33 +254,37 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
       }
     }
     // Invalidate provider once after batch import attempt is complete
-    if (successfullyImported.isNotEmpty) {
-    }
+    if (successfullyImported.isNotEmpty) {}
     return successfullyImported;
   }
 
   @override
   Future<void> importScreenshotEntities(List<Screenshot> screenshots) async {
-     // This method assumes the Screenshot objects already have the correct filePaths
-     // within the application support directory. It will overwrite existing metadata.
-     print("Importing screenshot entities. Ensure filePaths are correct.");
-     final metadataDir = await _getAndEnsureDirectory('metadata');
-     for (final screenshot in screenshots) {
-        try {
-           final metadataPath = p.join(metadataDir.path, '${p.withoutExtension(screenshot.fileName)}.json');
-           // Verify image exists before writing metadata
-           if (!await File(screenshot.filePath).exists()) {
-              print("Skipping entity import for ${screenshot.fileName}: Image file not found at ${screenshot.filePath}");
-              continue;
-           }
-           final jsonMap = screenshot.toJson();
-           final jsonString = jsonEncode(jsonMap);
-           await File(metadataPath).writeAsString(jsonString);
-        } catch (e) {
-           print('Error importing entity metadata for ${screenshot.fileName}: $e');
+    // This method assumes the Screenshot objects already have the correct filePaths
+    // within the application support directory. It will overwrite existing metadata.
+    print("Importing screenshot entities. Ensure filePaths are correct.");
+    final metadataDir = await _getAndEnsureDirectory('metadata');
+    for (final screenshot in screenshots) {
+      try {
+        final metadataPath = p.join(
+          metadataDir.path,
+          '${p.withoutExtension(screenshot.fileName)}.json',
+        );
+        // Verify image exists before writing metadata
+        if (!await File(screenshot.filePath).exists()) {
+          print(
+            "Skipping entity import for ${screenshot.fileName}: Image file not found at ${screenshot.filePath}",
+          );
+          continue;
         }
-     }
-     ref.invalidate(screenshotsProvider);
+        final jsonMap = screenshot.toJson();
+        final jsonString = jsonEncode(jsonMap);
+        await File(metadataPath).writeAsString(jsonString);
+      } catch (e) {
+        print('Error importing entity metadata for ${screenshot.fileName}: $e');
+      }
+    }
+    ref.invalidate(screenshotsProvider);
   }
 
   @override
@@ -262,31 +300,33 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
         metadataDeleted = true;
         print('Deleted metadata: $metadataPath');
       } else {
-         print('Metadata file not found for deletion: $metadataPath');
-         metadataDeleted = true; // Consider it "deleted" if not found
+        print('Metadata file not found for deletion: $metadataPath');
+        metadataDeleted = true; // Consider it "deleted" if not found
       }
     } catch (e) {
       print('Error deleting metadata file for ${screenshot.filePath}: $e');
       // Do not proceed if metadata deletion failed
-      throw Exception('Failed to delete metadata, aborting delete operation: $e');
+      throw Exception(
+        'Failed to delete metadata, aborting delete operation: $e',
+      );
     }
 
     // --- Delete image file only if metadata was successfully deleted (or wasn't found) ---
     if (metadataDeleted) {
-       try {
-         final imageFile = File(screenshot.filePath);
-         if (await imageFile.exists()) {
-           await imageFile.delete();
-           print('Deleted image: ${screenshot.filePath}');
-         } else {
-            print('Image file not found for deletion: ${screenshot.filePath}');
-         }
-       } catch (e) {
-         print('Error deleting image file ${screenshot.filePath}: $e');
-         // If image deletion fails after metadata deletion, the state is inconsistent.
-         // It might be better to log this prominently or attempt recovery.
-         // For now, we still invalidate as the metadata is gone.
-       }
+      try {
+        final imageFile = File(screenshot.filePath);
+        if (await imageFile.exists()) {
+          await imageFile.delete();
+          print('Deleted image: ${screenshot.filePath}');
+        } else {
+          print('Image file not found for deletion: ${screenshot.filePath}');
+        }
+      } catch (e) {
+        print('Error deleting image file ${screenshot.filePath}: $e');
+        // If image deletion fails after metadata deletion, the state is inconsistent.
+        // It might be better to log this prominently or attempt recovery.
+        // For now, we still invalidate as the metadata is gone.
+      }
     }
 
     // Invalidate the provider to trigger UI refresh
@@ -324,30 +364,35 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
       // print('Updated metadata: $metadataPath'); // Removed log
 
       // Invalidate provider to reflect changes
-      ref.invalidate(screenshotsProvider);
+      // ref.invalidate(screenshotsProvider);
       return screenshot; // Return the updated screenshot object
     } catch (e) {
       print('Error saving metadata for ${screenshot.filePath}: $e');
-      throw Exception('Failed to update metadata for ${screenshot.filePath}: $e');
+      throw Exception(
+        'Failed to update metadata for ${screenshot.filePath}: $e',
+      );
     }
-   }
+  }
 
   @override
   Future<Screenshot> analyzeScreenshot(Screenshot screenshot) async {
     // Get active AI service via ref
     final activeAiService = ref.read(activeAIServiceProvider);
     if (!await activeAiService.isConfigured()) {
-       throw Exception('AI Service is not configured.');
+      throw Exception('AI Service is not configured.');
     }
     // Pass screenshot to AI model for analysis
     print('Analyzing screenshot: ${screenshot.filePath}');
     // Call the correct method name and handle the AnalysisResult
-    final analysisResult = await activeAiService.analyzeImage(screenshot.filePath);
+    final analysisResult = await activeAiService.analyzeImage(
+      screenshot.filePath,
+    );
 
     if (!analysisResult.success) {
       throw Exception('AI analysis failed: ${analysisResult.errorMessage}');
     }
-    final analysisResults = analysisResult.data ?? {}; // Use empty map if data is null
+    final analysisResults =
+        analysisResult.data ?? {}; // Use empty map if data is null
     print('Analysis complete for: ${screenshot.filePath}');
 
     final updatedScreenshot = screenshot.copyWith(
@@ -385,7 +430,11 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
   @override
   // Update signature to accept screenshotPath
-  Future<Screenshot> setScreenshotCategory(String screenshotId, String screenshotPath, String? categoryId) async {
+  Future<Screenshot> setScreenshotCategory(
+    String screenshotId,
+    String screenshotPath,
+    String? categoryId,
+  ) async {
     // print('setScreenshotCategory called with screenshotId: $screenshotId, path: $screenshotPath, categoryId: $categoryId'); // Removed log
     // Directly read, update, and write the specific metadata file
     // Await the result of the async helper function
@@ -396,7 +445,9 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
       final file = File(metadataPath);
       if (!await file.exists()) {
         // print('Metadata file $metadataPath not found for direct update.'); // Removed log
-        throw Exception('Screenshot metadata not found at $metadataPath for category update');
+        throw Exception(
+          'Screenshot metadata not found at $metadataPath for category update',
+        );
       }
 
       final jsonString = await file.readAsString();
@@ -409,11 +460,10 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
       // Check if the ID matches (optional sanity check)
       if (screenshot.id != screenshotId) {
-         // print('Warning: ID mismatch in metadata file $metadataPath. Expected $screenshotId, found ${screenshot.id}'); // Removed log
-         // Decide how to handle mismatch: throw error, update anyway, etc.
-         // For now, we'll proceed but log the warning.
+        // print('Warning: ID mismatch in metadata file $metadataPath. Expected $screenshotId, found ${screenshot.id}'); // Removed log
+        // Decide how to handle mismatch: throw error, update anyway, etc.
+        // For now, we'll proceed but log the warning.
       }
-
 
       // Update the category ID
       final updatedScreenshot = screenshot.copyWith(
@@ -428,11 +478,11 @@ class ScreenshotRepositoryImpl implements ScreenshotRepository {
 
       // Invalidation will be handled by the caller (ScreenshotActions)
       return updatedScreenshot; // Return the updated object
-
     } catch (e) {
       // print('Error directly updating category for $screenshotPath: $e'); // Keep error logging? Maybe not for production. Removed for now.
-      throw Exception('Failed to update category for screenshot $screenshotId: $e');
+      throw Exception(
+        'Failed to update category for screenshot $screenshotId: $e',
+      );
     }
   }
-
 }

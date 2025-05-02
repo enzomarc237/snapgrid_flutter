@@ -54,7 +54,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading API key: $e');
+      debugPrint('Erreur de chargement de la clé API: $e');
     }
   }
 
@@ -76,19 +76,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               builder:
                   (_) => MacosAlertDialog(
                     appIcon: const MacosIcon(CupertinoIcons.lock),
-                    title: const Text('Clear API Key?'),
+                    title: const Text('Supprimer la clé API ?'),
                     message: Text(
-                      'Do you want to remove your ${config?.name ?? "AI"} API key?',
+                      'Voulez-vous supprimer votre clé API ${config?.name ?? "IA"} ?',
                     ),
                     primaryButton: PushButton(
                       controlSize: ControlSize.large,
-                      child: const Text('Keep Key'),
+                      child: const Text('Garder la clé'),
                       onPressed: () => Navigator.of(context).pop(false),
                     ),
                     secondaryButton: PushButton(
                       controlSize: ControlSize.large,
                       secondary: true,
-                      child: const Text('Clear Key'),
+                      child: const Text('Supprimer'),
                       onPressed: () => Navigator.of(context).pop(true),
                     ),
                   ),
@@ -108,9 +108,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             builder:
                 (_) => MacosAlertDialog(
                   appIcon: const MacosIcon(CupertinoIcons.lock),
-                  title: const Text('API Key Cleared'),
+                  title: const Text('Clé API supprimée'),
                   message: Text(
-                    'Your ${config?.name ?? "AI"} API key has been removed.',
+                    'Votre clé API ${config?.name ?? "IA"} a été supprimée.',
                   ),
                   primaryButton: PushButton(
                     controlSize: ControlSize.large,
@@ -138,9 +138,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           builder:
               (_) => MacosAlertDialog(
                 appIcon: const MacosIcon(CupertinoIcons.lock),
-                title: const Text('API Key Saved'),
+                title: const Text('Clé API enregistrée'),
                 message: Text(
-                  'Your ${config?.name ?? "AI"} API key has been saved securely.',
+                  'Votre clé API ${config?.name ?? "IA"} a été enregistrée en toute sécurité.',
                 ),
                 primaryButton: PushButton(
                   controlSize: ControlSize.large,
@@ -166,8 +166,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         builder:
             (_) => MacosAlertDialog(
               appIcon: const MacosIcon(CupertinoIcons.exclamationmark_triangle),
-              title: const Text('Error'),
-              message: Text('Failed to save API key: $e'),
+              title: const Text('Erreur'),
+              message: Text('Échec de l\'enregistrement de la clé API: $e'),
               primaryButton: PushButton(
                 controlSize: ControlSize.large,
                 child: const Text('OK'),
@@ -176,7 +176,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
       );
 
-      debugPrint('Error saving API key: $e');
+      debugPrint('Erreur d\'enregistrement de la clé API: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -197,7 +197,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Settings',
+                        'Paramètres',
                         style: MacosTheme.of(context).typography.largeTitle,
                       ),
                       const SizedBox(height: 24),
@@ -208,12 +208,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                       // API key section
                       Text(
-                        'API Key',
+                        'Clé API',
                         style: MacosTheme.of(context).typography.title3,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Enter your API key to enable AI analysis features.',
+                        'Entrez votre clé API pour activer les fonctionnalités d\'analyse par IA.',
                         style: MacosTheme.of(context).typography.body,
                       ),
                       const SizedBox(height: 8),
@@ -222,7 +222,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Expanded(
                             child: MacosTextField(
                               controller: _apiKeyController,
-                              placeholder: 'Enter your API key',
+                              placeholder: 'Entrez votre clé API',
                               obscureText: true,
                             ),
                           ),
@@ -232,7 +232,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               : PushButton(
                                 controlSize: ControlSize.regular,
                                 onPressed: _saveApiKey,
-                                child: const Text('Save API Key'),
+                                child: const Text('Enregistrer'),
                               ),
                         ],
                       ),
@@ -248,12 +248,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                       // Storage location section
                       Text(
-                        'Storage Locations',
+                        'Emplacements de stockage',
                         style: MacosTheme.of(context).typography.title3,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'SnapGrid stores your files in the following directories:',
+                        'SnapGrid stocke vos fichiers dans les répertoires suivants:',
                         style: MacosTheme.of(context).typography.body,
                       ),
                       const SizedBox(height: 16),
@@ -265,45 +265,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               children: [
                                 // Base directory
                                 DirectoryInfoTile(
-                                  title: 'Application Directory',
+                                  title: 'Répertoire de l\'application',
                                   path: directories['base']!,
                                   description:
-                                      'Root folder for all SnapGrid data',
+                                      'Dossier racine pour toutes les données SnapGrid',
                                 ),
                                 const SizedBox(height: 12),
 
                                 // Images directory
                                 DirectoryInfoTile(
-                                  title: 'Screenshots',
+                                  title: 'Captures d\'écran',
                                   path: directories['images']!,
                                   description:
-                                      'Stores your imported UI screenshots',
+                                      'Stocke vos captures d\'écran importées',
                                 ),
                                 const SizedBox(height: 12),
 
                                 // Metadata directory
                                 DirectoryInfoTile(
-                                  title: 'Analysis Data',
+                                  title: 'Données d\'analyse',
                                   path: directories['metadata']!,
                                   description:
-                                      'Contains Gemini AI analysis results',
+                                      'Contient les résultats d\'analyse de l\'IA',
                                 ),
                                 const SizedBox(height: 12),
 
                                 // Trash directory
                                 DirectoryInfoTile(
-                                  title: 'Trash',
+                                  title: 'Corbeille',
                                   path: directories['trash']!,
                                   description:
-                                      'Temporarily stores deleted screenshots',
+                                      'Stocke temporairement les captures d\'écran supprimées',
                                 ),
                               ],
                             ),
                         loading:
                             () => const Center(child: ThemedProgressCircle()),
                         error:
-                            (error, stack) =>
-                                Text('Error loading directories: $error'),
+                            (error, stack) => Text(
+                              'Erreur de chargement des répertoires: $error',
+                            ),
                       ),
 
                       const SizedBox(height: 24),
@@ -316,7 +317,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                       // About section
                       Text(
-                        'About',
+                        'À propos',
                         style: MacosTheme.of(context).typography.title3,
                       ),
                       const SizedBox(height: 8),
@@ -348,7 +349,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'A modern screenshot management tool with AI-powered UI element detection',
+                              'Un outil moderne de gestion de captures d\'écran avec détection d\'éléments UI par IA',
                               style: MacosTheme.of(context).typography.body,
                             ),
                           ],

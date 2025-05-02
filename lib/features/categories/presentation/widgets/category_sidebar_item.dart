@@ -5,7 +5,7 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../core/utils/context_menu.dart';
 
 import '../../domain/models/category.dart';
-import '../providers/category_providers.dart';
+
 
 class CategorySidebarItem extends ConsumerWidget {
   final Category category;

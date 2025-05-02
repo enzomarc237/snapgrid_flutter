@@ -59,15 +59,9 @@ class SnapGridApp extends ConsumerWidget {
           child: child!,
         );
       },
-      title: 'SnapGrid',
-      theme: AppTheme.lightTheme(
-        accentColor: themeSettings.accentColor,
-        highContrast: themeSettings.highContrast,
-      ),
-      darkTheme: AppTheme.darkTheme(
-        accentColor: themeSettings.accentColor,
-        highContrast: themeSettings.highContrast,
-      ),
+      title: 'CaptureMagic',
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
       themeMode: themeSettings.themeMode,
       debugShowCheckedModeBanner: false,
 

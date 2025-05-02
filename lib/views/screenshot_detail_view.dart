@@ -8,11 +8,8 @@ import '../providers/screenshot_providers.dart';
 
 class ScreenshotDetailView extends ConsumerWidget {
   final ScreenshotMetadata screenshot;
-  
-  const ScreenshotDetailView({
-    super.key,
-    required this.screenshot,
-  });
+
+  const ScreenshotDetailView({super.key, required this.screenshot});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,8 +37,33 @@ class ScreenshotDetailView extends ConsumerWidget {
                     MacosListTile(
                       title: const Text('Image Details'),
                       subtitle: Text(
-                        'Imported: ${screenshot.importDate.toString().split('.').first}',
+                        'Importé: ${screenshot.importDate.toString().split('.').first}',
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        PushButton(
+                          controlSize: ControlSize.regular,
+                          secondary: true,
+                          child: const Text('Exporter'),
+                          onPressed: () {
+                            // Implémenter la fonctionnalité d'exportation
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                        PushButton(
+                          controlSize: ControlSize.regular,
+                          child: const Row(
+                            children: [
+                              MacosIcon(CupertinoIcons.wand_stars, size: 16),
+                              SizedBox(width: 8),
+                              Text('Analyser'),
+                            ],
+                          ),
+                          onPressed: () => _analyzeScreenshot(context, ref),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -60,19 +82,39 @@ class ScreenshotDetailView extends ConsumerWidget {
       },
     );
   }
-  
+
   Widget _buildAnalysisPanel(BuildContext context, WidgetRef ref) {
-    final analysisAsyncValue = ref.watch(screenshotMetadataProvider(screenshot.fileName));
-    
+    final analysisAsyncValue = ref.watch(
+      screenshotMetadataProvider(screenshot.fileName),
+    );
+
     return analysisAsyncValue.when(
       data: (metadata) {
-        if (metadata == null || !metadata.analysisComplete || metadata.analysisResults == null) {
+        if (metadata == null ||
+            !metadata.analysisComplete ||
+            metadata.analysisResults == null) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'UI Analysis',
-                style: MacosTheme.of(context).typography.title3,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Analyse UI',
+                    style: MacosTheme.of(context).typography.title3,
+                  ),
+                  PushButton(
+                    controlSize: ControlSize.small,
+                    child: const Row(
+                      children: [
+                        MacosIcon(CupertinoIcons.wand_stars, size: 14),
+                        SizedBox(width: 6),
+                        Text('Analyser'),
+                      ],
+                    ),
+                    onPressed: () => _analyzeScreenshot(context, ref),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               const Center(
@@ -86,12 +128,12 @@ class ScreenshotDetailView extends ConsumerWidget {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'No analysis available',
+                      'Aucune analyse disponible',
                       style: TextStyle(color: CupertinoColors.systemGrey),
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Click "Analyze" to detect UI elements',
+                      'Cliquez sur "Analyser" pour détecter les éléments UI',
                       style: TextStyle(color: CupertinoColors.systemGrey),
                       textAlign: TextAlign.center,
                     ),
@@ -101,56 +143,77 @@ class ScreenshotDetailView extends ConsumerWidget {
             ],
           );
         }
-        
+
         final results = metadata.analysisResults!;
-        
+
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'UI Analysis',
-                style: MacosTheme.of(context).typography.title3,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Analyse UI',
+                    style: MacosTheme.of(context).typography.title3,
+                  ),
+                  PushButton(
+                    controlSize: ControlSize.small,
+                    child: const Row(
+                      children: [
+                        MacosIcon(
+                          CupertinoIcons.arrow_counterclockwise,
+                          size: 14,
+                        ),
+                        SizedBox(width: 6),
+                        Text('Réanalyser'),
+                      ],
+                    ),
+                    onPressed: () => _analyzeScreenshot(context, ref),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              
+
               // UI Type
               if (results.containsKey('uiType'))
                 _buildAnalysisSection(
                   context,
-                  'UI Type',
+                  'Type d\'interface',
                   results['uiType'].toString(),
                 ),
-              
+
               // Components
-              if (results.containsKey('components') && results['components'] is List)
+              if (results.containsKey('components') &&
+                  results['components'] is List)
                 _buildAnalysisListSection(
                   context,
-                  'UI Components',
+                  'Composants UI',
                   (results['components'] as List).cast<String>(),
                 ),
-              
+
               // Color Scheme
-              if (results.containsKey('colorScheme') && results['colorScheme'] is Map)
+              if (results.containsKey('colorScheme') &&
+                  results['colorScheme'] is Map)
                 _buildAnalysisMapSection(
                   context,
-                  'Color Scheme',
+                  'Palette de couleurs',
                   (results['colorScheme'] as Map).cast<String, dynamic>(),
                 ),
-              
+
               // Layout Pattern
               if (results.containsKey('layoutPattern'))
                 _buildAnalysisSection(
                   context,
-                  'Layout Pattern',
+                  'Structure de mise en page',
                   results['layoutPattern'].toString(),
                 ),
-              
+
               // Extracted Text
               if (results.containsKey('extractedText'))
                 _buildAnalysisSection(
                   context,
-                  'Extracted Text',
+                  'Texte extrait',
                   results['extractedText'].toString(),
                   expanded: true,
                 ),
@@ -159,12 +222,12 @@ class ScreenshotDetailView extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: ProgressCircle()),
-      error: (error, stackTrace) => Center(
-        child: Text('Error loading analysis: $error'),
-      ),
+      error:
+          (error, stackTrace) =>
+              Center(child: Text('Erreur de chargement de l\'analyse: $error')),
     );
   }
-  
+
   Widget _buildAnalysisSection(
     BuildContext context,
     String title,
@@ -176,47 +239,49 @@ class ScreenshotDetailView extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: MacosTheme.of(context).typography.subheadline.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: MacosTheme.of(
+            context,
+          ).typography.subheadline.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: MacosTheme.of(context).brightness == Brightness.dark
-              ? MacosColors.controlBackgroundColor.darkColor
-              : MacosColors.controlBackgroundColor.color,
+            color:
+                MacosTheme.of(context).brightness == Brightness.dark
+                    ? MacosColors.controlBackgroundColor.darkColor
+                    : MacosColors.controlBackgroundColor.color,
             borderRadius: BorderRadius.circular(4),
           ),
-          child: expanded
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(content),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+          child:
+              expanded
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      PushButton(
-                        controlSize: ControlSize.small,
-                        child: const Text('Copy'),
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: content));
-                        },
+                      Text(content),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          PushButton(
+                            controlSize: ControlSize.small,
+                            child: const Text('Copier'),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: content));
+                            },
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              )
-            : Text(content),
+                  )
+                  : Text(content),
         ),
         const SizedBox(height: 16),
       ],
     );
   }
-  
+
   Widget _buildAnalysisListSection(
     BuildContext context,
     String title,
@@ -227,33 +292,33 @@ class ScreenshotDetailView extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: MacosTheme.of(context).typography.subheadline.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: MacosTheme.of(
+            context,
+          ).typography.subheadline.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: MacosTheme.of(context).brightness == Brightness.dark
-              ? MacosColors.controlBackgroundColor.darkColor
-              : MacosColors.controlBackgroundColor.color,
+            color:
+                MacosTheme.of(context).brightness == Brightness.dark
+                    ? MacosColors.controlBackgroundColor.darkColor
+                    : MacosColors.controlBackgroundColor.color,
             borderRadius: BorderRadius.circular(4),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('• '),
-                    Expanded(child: Text(item)),
-                  ],
+              ...items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [const Text('• '), Expanded(child: Text(item))],
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
         ),
@@ -261,7 +326,7 @@ class ScreenshotDetailView extends ConsumerWidget {
       ],
     );
   }
-  
+
   Widget _buildAnalysisMapSection(
     BuildContext context,
     String title,
@@ -272,33 +337,39 @@ class ScreenshotDetailView extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: MacosTheme.of(context).typography.subheadline.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: MacosTheme.of(
+            context,
+          ).typography.subheadline.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: MacosTheme.of(context).brightness == Brightness.dark
-              ? MacosColors.controlBackgroundColor.darkColor
-              : MacosColors.controlBackgroundColor.color,
+            color:
+                MacosTheme.of(context).brightness == Brightness.dark
+                    ? MacosColors.controlBackgroundColor.darkColor
+                    : MacosColors.controlBackgroundColor.color,
             borderRadius: BorderRadius.circular(4),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ...items.entries.map((entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${entry.key}: ', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Expanded(child: Text(entry.value.toString())),
-                  ],
+              ...items.entries.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${entry.key}: ',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Expanded(child: Text(entry.value.toString())),
+                    ],
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
         ),
@@ -306,63 +377,67 @@ class ScreenshotDetailView extends ConsumerWidget {
       ],
     );
   }
-  
+
   void _analyzeScreenshot(BuildContext context, WidgetRef ref) async {
     // Check if API key is set
     final hasApiKey = await ref.read(geminiApiKeySetProvider.future);
-    
+
     if (!hasApiKey) {
       if (!context.mounted) return;
-      
+
       showMacosAlertDialog(
         context: context,
-        builder: (_) => MacosAlertDialog(
-          appIcon: const Icon(CupertinoIcons.wand_stars),
-          title: const Text('API Key Missing'),
-          message: const Text(
-            'You need to set a Google Gemini API key in Settings before analyzing screenshots.',
-          ),
-          primaryButton: PushButton(
-            controlSize: ControlSize.large,
-            child: const Text('OK'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
+        builder:
+            (_) => MacosAlertDialog(
+              appIcon: const Icon(CupertinoIcons.wand_stars),
+              title: const Text('Clé API manquante'),
+              message: const Text(
+                'Vous devez configurer une clé API Google Gemini dans les Paramètres avant d\'analyser les captures d\'écran.',
+              ),
+              primaryButton: PushButton(
+                controlSize: ControlSize.large,
+                child: const Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
       );
       return;
     }
-    
+
     // Show analysis in progress dialog
     if (!context.mounted) return;
-    
+
     showMacosAlertDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => MacosAlertDialog(
-        appIcon: const Icon(CupertinoIcons.wand_stars),
-        title: const Text('Analyzing Screenshot'),
-        message: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(height: 16),
-            ProgressCircle(),
-            SizedBox(height: 16),
-            Text('AI is analyzing your screenshot...\nThis may take a moment.'),
-            SizedBox(height: 16), 
-          ],
-        ),
-        primaryButton: PushButton(
-          controlSize: ControlSize.large,
-          child: const Text('OK'),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      builder:
+          (_) => MacosAlertDialog(
+            appIcon: const Icon(CupertinoIcons.wand_stars),
+            title: const Text('Analyse en cours'),
+            message: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: 16),
+                ProgressCircle(),
+                SizedBox(height: 16),
+                Text(
+                  'L\'IA analyse votre capture d\'écran...\nCela peut prendre un moment.',
+                ),
+                SizedBox(height: 16),
+              ],
+            ),
+            primaryButton: PushButton(
+              controlSize: ControlSize.large,
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
     );
-    
+
     // Start analysis
     try {
       await ref.read(analyzeScreenshotProvider(screenshot.filePath).future);
-      
+
       // Close the dialog when done
       if (context.mounted) {
         Navigator.of(context).pop();
@@ -371,19 +446,20 @@ class ScreenshotDetailView extends ConsumerWidget {
       // Close the dialog and show error
       if (context.mounted) {
         Navigator.of(context).pop();
-        
+
         showMacosAlertDialog(
           context: context,
-          builder: (_) => MacosAlertDialog(
-            appIcon: const Icon(CupertinoIcons.wand_stars),
-            title: const Text('Analysis Failed'),
-            message: Text('Error: $e'),
-            primaryButton: PushButton(
-              controlSize: ControlSize.large,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
+          builder:
+              (_) => MacosAlertDialog(
+                appIcon: const Icon(CupertinoIcons.wand_stars),
+                title: const Text('Échec de l\'analyse'),
+                message: Text('Erreur: $e'),
+                primaryButton: PushButton(
+                  controlSize: ControlSize.large,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
         );
       }
     }
