@@ -13,9 +13,14 @@ class AppTheme {
     final baseTheme = MacosThemeData.light();
 
     return baseTheme.copyWith(
-      primaryColor: Colors.black,
+      primaryColor: accentColor,
       dividerColor:
           highContrast ? const Color(0xFF8E8E93) : baseTheme.dividerColor,
+      canvasColor:
+          highContrast ? const Color(0xFFF2F2F7) : baseTheme.canvasColor,
+      iconTheme: MacosIconThemeData(
+        color: highContrast ? Colors.black : Colors.black54,
+      ),
     );
   }
 
@@ -32,6 +37,9 @@ class AppTheme {
           highContrast ? const Color(0xFF636366) : baseTheme.dividerColor,
       canvasColor:
           highContrast ? const Color(0xFF1C1C1E) : baseTheme.canvasColor,
+      iconTheme: MacosIconThemeData(
+        color: highContrast ? Colors.white : Colors.white60,
+      ),
     );
   }
 

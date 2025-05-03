@@ -6,11 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../core/utils/keyboard_shortcuts.dart';
-
 import '../../../../core/widgets/error_view.dart';
 import '../../domain/models/screenshot.dart';
 import '../providers/screenshot_providers.dart';
 import '../widgets/tag_editor.dart';
+import '../widgets/color_palette_widget.dart';
+import '../widgets/font_list_widget.dart';
 
 /// Screen that displays the details of a screenshot
 class ScreenshotDetailScreen extends ConsumerWidget {
@@ -251,10 +252,19 @@ class ScreenshotDetailScreen extends ConsumerWidget {
           // Color Scheme
           if (results.containsKey('colorScheme') &&
               results['colorScheme'] is Map)
-            _buildAnalysisMapSection(
+            _buildColorPaletteSection(
               context,
               'Color Scheme',
               (results['colorScheme'] as Map).cast<String, dynamic>(),
+            ),
+            
+          // Detected Fonts
+          if (results.containsKey('detectedFonts') &&
+              results['detectedFonts'] is List)
+            _buildFontsSection(
+              context,
+              'Detected Fonts',
+              (results['detectedFonts'] as List).cast<String>(),
             ),
 
           // Layout Pattern
@@ -498,6 +508,105 @@ class ScreenshotDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+  
+  Widget _buildColorPaletteSection(
+    BuildContext context,
+    String title,
+    Map<String, dynamic> colors,
+  ) {
+    // Convert the dynamic values to strings
+    final Map<String, String> colorMap = {};
+    for (final entry in colors.entries) {
+      colorMap[entry.key] = entry.value.toString();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: MacosTheme.of(
+                context,
+              ).typography.headline.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            Text(
+              'Click on a color to copy its hex value',
+              style: TextStyle(
+                fontSize: 10,
+                color:
+                    MacosTheme.of(context).brightness == Brightness.dark
+                        ? MacosColors.white.withOpacity(0.5)
+                        : MacosColors.black.withOpacity(0.5),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                MacosTheme.of(context).brightness == Brightness.dark
+                    ? MacosColors.controlBackgroundColor.darkColor
+                    : MacosColors.controlBackgroundColor.color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ColorPaletteWidget(colors: colorMap),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+  
+  Widget _buildFontsSection(
+    BuildContext context,
+    String title,
+    List<String> fonts,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: MacosTheme.of(
+            context,
+          ).typography.headline.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                MacosTheme.of(context).brightness == Brightness.dark
+                    ? MacosColors.controlBackgroundColor.darkColor
+                    : MacosColors.controlBackgroundColor.color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: fonts.isEmpty
+              ? Text(
+                  'No fonts detected',
+                  style: TextStyle(
+                    color: MacosTheme.of(context).brightness == Brightness.dark
+                        ? MacosColors.white
+                        : MacosColors.black,
+                  ),
+                )
+              : FontListWidget(fonts: fonts),
         ),
         const SizedBox(height: 16),
       ],

@@ -309,8 +309,11 @@ class GeminiService implements AIService {
     }
 
     if (options.analyzeColorScheme) {
-      buffer.writeln('- colorScheme (primary colors)');
+      buffer.writeln('- colorScheme (a map of color names to their exact hex values like #RRGGBB)');
     }
+    
+    // Add font detection
+    buffer.writeln('- detectedFonts (list of font families detected in the image)');
 
     if (options.detectLayoutPatterns) {
       buffer.writeln('- layoutPattern (layout structure)');
@@ -443,6 +446,21 @@ class GeminiService implements AIService {
             .group(1)
             ?.trim()
             .replaceAll('"', '');
+      }
+      
+      // Extract detected fonts
+      final fontsMatch = RegExp(
+        r'detectedFonts[":\s]+\[(.*?)\]',
+        dotAll: true,
+      ).firstMatch(text);
+      if (fontsMatch != null && fontsMatch.groupCount >= 1) {
+        final fontsText = fontsMatch.group(1);
+        result['detectedFonts'] = 
+            fontsText
+                ?.split(',')
+                .map((e) => e.trim().replaceAll('"', ''))
+                .where((e) => e.isNotEmpty)
+                .toList();
       }
 
       return result;

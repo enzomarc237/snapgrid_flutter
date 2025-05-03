@@ -94,4 +94,12 @@ class ScreenshotMetadata {
       analysisResults: analysisResults ?? this.analysisResults,
     );
   }
+  
+  List<String> getFonts() {
+    return (analysisResults?['detectedFonts'] as List<dynamic>? ?? []).cast<String>();
+  }
+  
+  Map<String, String> getColors() {
+    return (analysisResults?['colorScheme'] as Map<String, dynamic>? ?? {}).map((key, value) => MapEntry(key, value as String));
+  }
 }
