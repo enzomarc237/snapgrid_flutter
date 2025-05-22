@@ -4,9 +4,7 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../core/widgets/themed_progress_circle.dart';
 
-import '../providers/screenshot_providers.dart'
-    hide selectedTagProvider, showFavoritesOnlyProvider, allTagsProvider;
-import '../providers/tag_providers.dart';
+import '../providers/screenshot_providers.dart';
 import 'tag_chip.dart';
 
 /// A widget that displays a horizontal list of tags for filtering
