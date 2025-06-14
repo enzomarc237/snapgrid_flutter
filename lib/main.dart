@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_providers.dart';
@@ -10,12 +11,32 @@ import 'core/utils/platform_utils.dart';
 import 'core/utils/window_utils.dart';
 import 'features/categories/presentation/providers/category_providers.dart';
 import 'features/screenshots/presentation/screens/main_screen.dart';
+import 'services/system_tray_service.dart';
+import 'providers/system_tray_provider.dart';
 
 /// Global navigator key for accessing navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize window manager
+  await windowManager.ensureInitialized();
+
+  // Configure window options
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(1200, 800),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.normal,
+  );
+  
+  await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+    await windowManager.setPreventClose(true);
+  });
 
   // Initialize SharedPreferences
   final sharedPreferences = await SharedPreferences.getInstance();
@@ -37,9 +58,48 @@ void main() async {
 }
 
 /// The main application widget
-class SnapGridApp extends ConsumerWidget {
+class SnapGridApp extends ConsumerStatefulWidget {
   /// Creates the main application widget
   const SnapGridApp({super.key});
+
+  @override
+  ConsumerState<SnapGridApp> createState() => _SnapGridAppState();
+}
+
+class _SnapGridAppState extends ConsumerState<SnapGridApp> with WindowListener {
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    _initializeSystemTray();
+  }
+
+  Future<void> _initializeSystemTray() async {
+    try {
+      await SystemTrayService().initialize();
+      if (mounted) {
+        ref.read(systemTrayInitializedProvider.notifier).state = true;
+      }
+    } catch (e) {
+      debugPrint('Failed to initialize system tray: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    // Prevent the window from closing and hide it instead
+    bool isPreventClose = await windowManager.isPreventClose();
+    if (isPreventClose) {
+      await windowManager.hide();
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

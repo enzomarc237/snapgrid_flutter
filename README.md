@@ -13,6 +13,7 @@ This is the Flutter version of SnapGrid, rebuilt from the ground up with a clean
 - **Smart Organization** – Search and filter your screenshots based on detected UI elements
 - **Fast Local Storage** – All screenshots and metadata are stored locally
 - **Cross-Platform** – Built with Flutter for macOS, Windows, and Linux support
+- **System Tray Integration** – Run in the background with system tray support
 - **Accessibility Analysis** – Detect potential accessibility issues in UI designs
 - **Design System Detection** – Identify design systems used in screenshots
 
@@ -23,6 +24,18 @@ Download the latest release for your platform from the [releases](https://github
 ## Requirements
 
 To use the AI pattern detection feature, you'll need to add your Google Gemini API key in the settings. The app uses Gemini Vision for analysis. You can still use the app without this feature — it just won't detect patterns.
+
+### Linux Requirements
+
+For system tray functionality on Linux, install the required dependencies:
+
+```bash
+# Ubuntu/Debian (older versions)
+sudo apt-get install appindicator3-0.1 libappindicator3-dev
+
+# Ubuntu 22.04 or greater
+sudo apt-get install libayatana-appindicator3-dev
+```
 
 ## Privacy
 
