@@ -44,4 +44,6 @@
 </testing_instructions>
 
 <pull_request_formatting>
+- Les titres de PR doivent suivre le format `type(scope): description` (ex: `feat(auth): ajoute la connexion Google`).
+- Le corps de la PR doit décrire les changements effectués et leur raison d'être.
 </pull_request_formatting>
